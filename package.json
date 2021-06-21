@@ -1,11 +1,14 @@
 {
-  "name": "RoomieBot",
+  "name": "Moolah",
   "version": "1.0.0",
   "description": "For convenience amongst roommates",
   "main": "bot.js",
   "author": "Abigail Ng",
   "dependencies": {
-    "discord.io": "https://github.com/woor/discord.io/tarball/gateway_v6",
-    "winston": "^3.3.3"
+    "@keyv/redis": "^2.1.2",
+    "discord.js": "^12.5.3",
+    "keyv": "^4.0.1",
+    "sqlite": "^4.0.21",
+    "sqlite3": "^5.0.2"
   }
 }
