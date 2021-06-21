@@ -5,9 +5,7 @@
   "main": "bot.js",
   "author": "Abigail Ng",
   "dependencies": {
-    "@keyv/redis": "^2.1.2",
     "discord.js": "^12.5.3",
-    "keyv": "^4.0.1",
     "sqlite": "^4.0.21",
     "sqlite3": "^5.0.2"
   }

@@ -583,7 +583,7 @@ module.exports = {
     handleNoTransactions,
     welcome: {
         embed:{
-            title: `Hello! Thanks for adding me! I'm Moolah, a bot designed to help keep group finances simple.`,
+            title: `Hello! Thanks for adding me! I'm Moolah, a bot designed to help keep group finances simple. 🐮`,
             color: 0x2471a3, 
             description: "The prefix for all my commands is '/', e.g: '/help'.\nUse the command /help to see a list of all my commands.",
             footer: { text: 'Moolah created and developed by beexng#2380.' }
@@ -594,27 +594,27 @@ module.exports = {
             title: `My commands:`,
             color: 0x2471a3, 
             description: `Inputs between {} are literals - type the one which fits your need.
-                          Inputs between [] are variables according to what you need to submit.
-                          Inputs which are italicized are optional.`,
+Inputs between [] are variables according to what you need to submit.
+Inputs which are italicized are optional.`,
             fields:[
                 {
                     name: ':gear: Setup and logistics',
                     value: `/help
-                            /setUser [@user] [emoji]
-                            /setChannel {transactions | moneyLog | alerts} [#channel]
-                            /removeUser [@user]
-                            /clearChannel [#channel]
-                            /userList
-                            /channelList`
+/setUser [@user] [emoji]
+/setChannel {transactions | moneyLog | alerts} [#channel]
+/removeUser [@user]
+/clearChannel [#channel]
+/userList
+/channelList`
                 },   
                 {
                     name: ':moneybag: Money',
                     value: `/bought [money value to 2 decimals] *[description]*
-                            /paid [money value to 2 decimals] *[user char of person paid]*
-                            /owe
-                            /moneyLog
-                            /delete [number of transaction to delete]
-                            /clearTransactions`
+/paid [money value to 2 decimals] *[user char of person paid]*
+/owe
+/moneyLog
+/delete [number of transaction to delete]
+/clearTransactions`
                 },     
             ],
             footer: { text: 'Moolah created and developed by beexng#2380.' }

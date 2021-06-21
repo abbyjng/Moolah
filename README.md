@@ -6,4 +6,6 @@ Moolah can be used for any group from a short vacation group of 15 to a long ter
 
 ### [Add Moolah to your server!](https://discord.com/oauth2/authorize?client_id=839639502767259669&scope=bot)
 
+Join the [Discord server](https://discord.gg/78EPUxMxt2)!
+
 *Designed and developed by @beexng#2380*
