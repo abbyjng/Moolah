@@ -584,6 +584,9 @@ module.exports = {
     welcome: {
         embed:{
             title: `Hello! Thanks for adding me! I'm Moolah, a bot designed to help keep group finances simple. 🐮`,
+            thumbnail: {
+                url: 'https://i.ibb.co/vZyf66y/Moolah-Logo.png',
+            },
             color: 0x2471a3, 
             description: "The prefix for all my commands is '/', e.g: '/help'.\nUse the command /help to see a list of all my commands.",
             footer: { text: 'Moolah created and developed by beexng#2380.' }
@@ -610,7 +613,7 @@ Inputs which are italicized are optional.`,
                 {
                     name: ':moneybag: Money',
                     value: `/bought [money value to 2 decimals] *[description]*
-/paid [money value to 2 decimals] *[user char of person paid]*
+/paid [money value to 2 decimals] *[emoji of person being paid]*
 /owe
 /moneyLog
 /delete [number of transaction to delete]
