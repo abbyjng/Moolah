@@ -80,9 +80,9 @@ client.on("message", async function(message) {
                 channel.send(embedHandler.help);
                 break;
             case 'setuser':
-                setUser = server.members.cache.find(user => user.id === args[0].slice(3, -1));
+                const setUser = getUserFromMention(args[0]);
                 if (!setUser) {
-                    channel.send(`User could not be set. Link user query like so: <@839639502767259669>`)
+                    channel.send(`User could not be set. Link user query like so: <@!839639502767259669>`);
                     break;
                 }
                 sql = `SELECT userid FROM users WHERE emoji = ? AND serverid = ? AND status = 1`
@@ -123,7 +123,7 @@ client.on("message", async function(message) {
             case 'removeuser':
                 removeUser = server.members.cache.find(user => user.id === args[0].slice(3, -1));
                 if (!removeUser) {
-                    channel.send(`User could not be removed. Link user query like so: <@839639502767259669>`)
+                    channel.send(`User could not be removed. Link user query like so: <@!839639502767259669>`)
                     break;
                 }
                 
@@ -632,7 +632,7 @@ client.on("emojiDelete", async function(emoji) {
                 title: `‼️ WARNING ‼️`,
                 color: 0xFF0000, 
                 description: `The emoji previously called :${emoji.name}: was deleted.
-                This emoji was connected to <@${user.userid}>. Please assign a new emoji to <@${user.userid}>. Until this is done, this user will be removed from the database.`
+                This emoji was connected to <@!${user.userid}>. Please assign a new emoji to <@!${user.userid}>. Until this is done, this user will be removed from the database.`
             }
         });
     }
@@ -815,7 +815,7 @@ client.on("guildMemberRemove", async function(member) {
             embed:{
                 title: `‼️ WARNING ‼️`,
                 color: 0xFF0000, 
-                description: `The user <@${member.id}> has left this server. They have been removed from the database.`
+                description: `The user <@!${member.id}> has left this server. They have been removed from the database.`
             }
         });
     }
@@ -857,7 +857,7 @@ function getFormattedUsers(users, userid = null) {
     users.forEach(row => {
         if (row.userid !== userid) {
             formUsers += `${row.emoji} → `
-            formUsers += `<@${row.userid}>\n`;
+            formUsers += `<@!${row.userid}>\n`;
         }
     })
     return formUsers;
@@ -931,7 +931,7 @@ async function getLogMessage(serverid) {
 
                 var logmsg = ``
                 for (user in log) {
-                    logmsg += `<@${user}> owes:\n`;
+                    logmsg += `<@!${user}> owes:\n`;
 
                     for (key in log[user]) {
                         logmsg += `$${log[user][key].value.toFixed(2)} to ${log[user][key].emoji} | `
@@ -943,6 +943,20 @@ async function getLogMessage(serverid) {
             })
         })
     })
+}
+
+function getUserFromMention(mention) {
+	if (!mention) return;
+
+	if (mention.startsWith('<@') && mention.endsWith('>')) {
+		mention = mention.slice(2, -1);
+
+		if (mention.startsWith('!')) {
+			mention = mention.slice(1);
+		}
+
+		return client.users.cache.get(mention);
+	}
 }
 
 client.login(auth.token);

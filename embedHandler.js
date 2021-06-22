@@ -535,7 +535,7 @@ module.exports = {
         return new Promise((resolve, reject) => {
             emojis = ['❌', '☑️'];
 
-            var descString = `Removing user <@${userid}> remove them from the log and not allow them to create new transactions. They will still appear in the transaction log.\n`;
+            var descString = `Removing user <@!${userid}> remove them from the log and not allow them to create new transactions. They will still appear in the transaction log.\n`;
         
             embed = new Discord.MessageEmbed()
                 .setTitle(`Remove this user?`)
@@ -565,13 +565,13 @@ module.exports = {
                 collector.on('end', collected => {
                     if (collected.length === 0) {
                         resolve(-1);
-                        cancelled(channel, `Action timed out - user <@${userid}> has not been deleted.`);
+                        cancelled(channel, `Action timed out - user <@!${userid}> has not been deleted.`);
                     } else if (collected.keys().next().value === '❌') {
                         resolve(0);
-                        cancelled(channel, `Action cancelled - user <@${userid}> has not been removed.`);
+                        cancelled(channel, `Action cancelled - user <@!${userid}> has not been removed.`);
                     } else if (collected.keys().next().value === '☑️') {
                         resolve(1);
-                        confirmed(channel, `User <@${userid}> removed successfully.`);
+                        confirmed(channel, `User <@!${userid}> removed successfully.`);
                     }
                     m.delete();
                 });
@@ -598,7 +598,8 @@ module.exports = {
             color: 0x2471a3, 
             description: `Inputs between {} are literals - type the one which fits your need.
 Inputs between [] are variables according to what you need to submit.
-Inputs which are italicized are optional.`,
+Inputs which are italicized are optional.
+**The brackets are not included in any command, unless you want them in your optional description.**`,
             fields:[
                 {
                     name: ':gear: Setup and logistics',
