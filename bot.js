@@ -90,9 +90,7 @@ client.on("message", async function(message) {
                 if (result) {
                     channel.send(`Emoji could not be set. This emoji has already been assigned to <@${result.userid}>.`)
                     break;
-                } else {
-                    updateMoneyLog(server)
-                    
+                } else {                    
                     if (args[1].charAt(0) == "<") { // server specific emoji
                         // search for emoji within server
                         emoji = server.emojis.cache.find(emoji => emoji.id === args[1].slice(args[1].indexOf(":", 2) + 1, -1));
@@ -112,7 +110,9 @@ client.on("message", async function(message) {
                         }
                         sql = `INSERT OR REPLACE INTO users (serverid, userid, emoji, status) 
                                         VALUES (?, ?, ?, 1);`;
-                        db.run(sql, [server.id, setUser.id, args[1]]);
+                        db.run(sql, [server.id, setUser.id, args[1]]).then(() => {
+                            updateMoneyLog(server);
+                        });
                     }
     
                     channel.send({embed:{ 
@@ -131,8 +131,9 @@ client.on("message", async function(message) {
                     embedHandler.handleRemove(channel, message.author.id, args[0].slice(3, -1))
                     .then((result) => {
                         if (result === 1) {
-                            updateMoneyLog(server);
-                            db.run(`UPDATE users SET status = 0 WHERE userid = ? AND serverid = ?;`, [args[0].slice(3, -1), server.id]);
+                            db.run(`UPDATE users SET status = 0 WHERE userid = ? AND serverid = ?;`, [args[0].slice(3, -1), server.id]).then(() => {
+                                updateMoneyLog(server);
+                            });
                         }
                     });
                 })();
@@ -271,7 +272,6 @@ client.on("message", async function(message) {
                         embedHandler.handleTransaction(channel, message.author.id, users, getFormattedUsers(users), cost, description)
                         .then((recipients) => {
                             if (recipients[0] !== 0 && recipients[0] !== -1) {
-                                updateMoneyLog(server);
                                 sql = `INSERT INTO transactions (serverid, value, description)
                                        VALUES (?, ?, ?);`;
                                 db.run(sql, [server.id, cost/recipients.length, description]).then(() => {
@@ -279,7 +279,9 @@ client.on("message", async function(message) {
                                         recipients.forEach((recipient) => {
                                             sql = `INSERT INTO transactionhands (serverid, transactionid, owner, recipient)
                                                     VALUES (?, ?, ?, ?);`;
-                                            db.run(sql, [server.id, transactionid.lastID, message.author.id, recipient.userid]);
+                                            db.run(sql, [server.id, transactionid.lastID, message.author.id, recipient.userid]).then(() => {
+                                                updateMoneyLog(server);
+                                            });
                                         })
                                     });
                                 });
@@ -319,14 +321,15 @@ client.on("message", async function(message) {
                             embedHandler.handlePayment(channel, message.author.id, users, getFormattedUsers(users, message.author.id), cost)
                             .then((recipient) => {
                                 if (recipient !== 0 && recipient !== -1) {
-                                    updateMoneyLog(server);
                                     sql = `INSERT INTO transactions (serverid, value, description)
                                             VALUES (?, ?, "defaultPaidDescription")`
                                     db.run(sql, [server.id, cost]).then(() => {
                                         db.run("SELECT last_insert_rowid()").then((transactionid) => {
                                             sql = `INSERT INTO transactionhands (serverid, transactionid, owner, recipient)
                                                     VALUES (?, ?, ?, ?);`;
-                                            db.run(sql, [server.id, transactionid.lastID, message.author.id, recipient.userid]);
+                                            db.run(sql, [server.id, transactionid.lastID, message.author.id, recipient.userid]).then(() => {
+                                                updateMoneyLog(server);
+                                            });
                                         });
                                     });
                                 }
@@ -345,7 +348,6 @@ client.on("message", async function(message) {
                             channel.send(`Why are you trying to pay yourself? That's not allowed`);
                             break;
                         }
-                        updateMoneyLog(server);
                         // insert into transactions
                         sql = `INSERT INTO transactions (serverid, value, description)
                                VALUES (?, ?, "defaultPaidDescription")`
@@ -353,7 +355,9 @@ client.on("message", async function(message) {
                             db.run("SELECT last_insert_rowid()").then((transactionid) => {
                                 sql = `INSERT INTO transactionhands (serverid, transactionid, owner, recipient)
                                         VALUES (?, ?, ?, ?);`;
-                                db.run(sql, [server.id, transactionid.lastID, message.author.id, userid]);
+                                db.run(sql, [server.id, transactionid.lastID, message.author.id, userid]).then(() => {
+                                    updateMoneyLog(server);
+                                });
                             });
                         });
                         embedHandler.confirmPayment(channel, message.author.id, userid, args[1], cost);
@@ -569,9 +573,10 @@ client.on("message", async function(message) {
                             embedHandler.handleDelete(channel, message.author.id, transactionids[num - 1], recipients, num)
                             .then((result) => {
                                 if (result === 1) {
-                                    updateMoneyLog(server);
                                     transactionid = transactionids[num-1].transactionid
-                                    db.run(`DELETE FROM transactions WHERE serverid = ? AND transactionid = ?;`, [server.id, transactionid]);
+                                    db.run(`DELETE FROM transactions WHERE serverid = ? AND transactionid = ?;`, [server.id, transactionid]).then(() => {
+                                        updateMoneyLog(server);
+                                    });
                                     db.run(`DELETE FROM transactionhands WHERE serverid = ? AND transactionid = ?;`, [server.id, transactionid]);
                                 }
                             });
@@ -589,7 +594,9 @@ client.on("message", async function(message) {
                         .then((result) => {
                             if (result === 1) {
                                 updateMoneyLog(server);
-                                db.run(`DELETE FROM transactions WHERE serverid = ?;`, [server.id]);
+                                db.run(`DELETE FROM transactions WHERE serverid = ?;`, [server.id]).then(() => {
+                                    updateMoneyLog(server);
+                                });
                                 db.run(`DELETE FROM transactionhands WHERE serverid = ?;`, [server.id]);
                             }
                         });
@@ -606,10 +613,10 @@ client.on("emojiDelete", async function(emoji) {
     user = await db.get(sql, [`<:${emoji.name}:${emoji.id}>`, emoji.guild.id]);
     if (user) {
         // delete user from the table, add to deleted users
-        db.run(`UPDATE users SET status = 0 WHERE userid = ? AND serverid = ?;`, [user.userid, emoji.guild.id]);
-
-        // update moneylog embed without the user
-        updateMoneyLog(emoji.guild)
+        db.run(`UPDATE users SET status = 0 WHERE userid = ? AND serverid = ?;`, [user.userid, emoji.guild.id]).then(() => {
+            // update moneylog embed without the user
+            updateMoneyLog(emoji.guild)
+        });
 
         // send message warning user to re-add the user with a new emoji
         sql = `SELECT alertsid FROM servers WHERE serverid = ?`;
@@ -644,10 +651,10 @@ client.on("emojiUpdate", async function(oldEmoji, newEmoji) {
     user = await db.get(sql, [`<:${oldEmoji.name}:${oldEmoji.id}>`, oldEmoji.guild.id]);
     if (user) {
         // update emoji in sql
-        db.run(`UPDATE users SET emoji = ? WHERE userid = ? AND serverid = ?;`, [`<:${newEmoji.name}:${newEmoji.id}>`, user.userid, oldEmoji.guild.id]);
-
-        // update moneylog embed
-        updateMoneyLog(newEmoji.guild);
+        db.run(`UPDATE users SET emoji = ? WHERE userid = ? AND serverid = ?;`, [`<:${newEmoji.name}:${newEmoji.id}>`, user.userid, oldEmoji.guild.id]).then(() => {
+            // update moneylog embed
+            updateMoneyLog(newEmoji.guild);
+        });
     }
 });
 
@@ -759,7 +766,6 @@ client.on("messageDelete", async function(message) {
             // AAAHH PANIC PANIC EVERYONE PANIC
 
             // jk everything is okay
-            updateMoneyLog(message.guild, message.channel.id);
 
             // send message warning that the channel has been unset
             if (data.alertsid) {
@@ -790,10 +796,10 @@ client.on("guildMemberRemove", async function(member) {
     user = await db.get(sql, [member.id, member.guild.id]);
     if (user) {
         // delete user from the table, add to deleted users
-        db.run(`UPDATE users SET status = 0 WHERE userid = ? AND serverid = ?;`, [user.userid, member.guild.id]);
-
-        // update moneylog embed without the user
-        updateMoneyLog(member.guild)
+        db.run(`UPDATE users SET status = 0 WHERE userid = ? AND serverid = ?;`, [user.userid, member.guild.id]).then(() => {
+            // update moneylog embed without the user
+            updateMoneyLog(member.guild)
+        });
 
         // send message warning user to re-add the user with a new emoji
         sql = `SELECT alertsid FROM servers WHERE serverid = ?`;
@@ -891,7 +897,9 @@ async function getLogMessage(serverid) {
             if (users.length <= 1) {
                 resolve(`No transactions available.`)
             }
+            var logmsg = ``;
             users.forEach((user) => {
+                logmsg += `<@!${user.userid}>: ${user.emoji}\n`;
                 log[user.userid] = {}
                 users.forEach((otherUser) => {
                     if (otherUser.userid != user.userid) {
@@ -899,6 +907,8 @@ async function getLogMessage(serverid) {
                     }
                 }) 
             })
+
+            logmsg += `----------\n`;
 
             // get all transactions and handle them
             sql =  `SELECT
@@ -929,7 +939,6 @@ async function getLogMessage(serverid) {
                     }
                 })
 
-                var logmsg = ``
                 for (user in log) {
                     logmsg += `<@!${user}> owes:\n`;
 
