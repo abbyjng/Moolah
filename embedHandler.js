@@ -588,7 +588,7 @@ module.exports = {
                 url: 'https://i.ibb.co/vZyf66y/Moolah-Logo.png',
             },
             color: 0x2471a3, 
-            description: "The prefix for all my commands is '/', e.g: '/help'.\nUse the command /help to see a list of all my commands.",
+            description: "The prefix for all my commands is '!', e.g: '!help'.\nUse the command !help to see a list of all my commands.",
             footer: { text: 'Moolah created and developed by beexng#2380.' }
         }
     },
@@ -603,22 +603,22 @@ Inputs which are italicized are optional.
             fields:[
                 {
                     name: ':gear: Setup and logistics',
-                    value: `/help
-/setUser [@user] [emoji]
-/setChannel {transactions | moneyLog | alerts} [#channel]
-/removeUser [@user]
-/clearChannel [#channel]
-/userList
-/channelList`
+                    value: `!help
+!setUser [@user] [emoji]
+!setChannel {transactions | moneyLog | alerts} [#channel]
+!removeUser [@user]
+!clearChannel [#channel]
+!userList
+!channelList`
                 },   
                 {
                     name: ':moneybag: Money',
-                    value: `/bought [money value to 2 decimals] *[description]*
-/paid [money value to 2 decimals] *[emoji of person being paid]*
-/owe
-/moneyLog
-/delete [number of transaction to delete]
-/clearTransactions`
+                    value: `!bought [money value to 2 decimals] *[description]*
+!paid [money value to 2 decimals] *[emoji of person being paid]*
+!owe
+!history
+!delete [number of transaction to delete]
+!clearTransactions`
                 },     
             ],
             footer: { text: 'Moolah created and developed by beexng#2380.' }

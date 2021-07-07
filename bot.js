@@ -66,7 +66,7 @@ client.on('guildDelete', server => {
 });
 
 client.on("message", async function(message) {
-    if (message.content.substring(0, 1) == '/') {
+    if (message.content.substring(0, 1) == '!') {
         let args = message.content.substring(1).split(' ');
         const cmd = args[0].toLowerCase();
         args = args.splice(1);
@@ -166,7 +166,7 @@ client.on("message", async function(message) {
                 break;
             case 'setchannel':
                 if (args.length < 2) {
-                    channel.send(`Invalid command usage: /setchannel [ transactions | moneyLog | alerts ] [#channel]`)
+                    channel.send(`Invalid command usage: !setchannel [ transactions | moneyLog | alerts ] [#channel]`)
                     break;
                 }
                 setChannel = server.channels.cache.get(args[1].slice(2,-1))
@@ -210,7 +210,7 @@ client.on("message", async function(message) {
                 break;
             case 'clearchannel':
                 if (args.length < 1) {
-                    channel.send(`Invalid command usage: /clearchannel [transactions | moneyLog | alerts ]`)
+                    channel.send(`Invalid command usage: !clearchannel [transactions | moneyLog | alerts ]`)
                     break;
                 }
                 switch(args[0].toLowerCase()) {
@@ -240,7 +240,7 @@ client.on("message", async function(message) {
                 data = await db.get(sql, [server.id]);
                 if (data.transactionsid == '' || data.transactionsid == channel.id) {
                     if (args.length == 0) {
-                        channel.send(`Invalid command usage: /bought [value] [description of transaction]`)
+                        channel.send(`Invalid command usage: !bought [value] [description of transaction]`)
                         break;
                     }
                     cost = args[0];
@@ -296,7 +296,7 @@ client.on("message", async function(message) {
                 data = await db.get(sql, [server.id]);
                 if (data.transactionsid == '' || data.transactionsid == channel.id) {
                     if (args.length == 0 || args.length > 2) {
-                        channel.send(`Invalid command usage: /paid [value] [emoji of recipient]`)
+                        channel.send(`Invalid command usage: !paid [value] [emoji of recipient]`)
                         break;
                     }
                     cost = args[0];
@@ -518,7 +518,7 @@ client.on("message", async function(message) {
                 data = await db.get(sql, [server.id]);
                 if (data.transactionsid == '' || data.transactionsid == channel.id) {
                     if (args.length == 0) {
-                        channel.send(`Invalid command usage: /delete [transaction number to delete]`)
+                        channel.send(`Invalid command usage: !delete [transaction number to delete]`)
                         break;
                     }
                     num = args[0];
@@ -752,7 +752,7 @@ client.on("channelUpdate", async function(oldChannel, newChannel) {
                     title: `‼️ WARNING ‼️`,
                     color: 0xFF0000, 
                     description: `The channel previously set as the ${ch} channel has been changed so that Moolah no longer can access it. This channel has been unset.`
-                }
+                } 
             });
         }
     }
@@ -784,7 +784,7 @@ client.on("messageDelete", async function(message) {
                 embed:{
                     title: `⚠️ WARNING ⚠️`,
                     color: 0xFFFF00, 
-                    description: `Did you mean to delete the log message? If you wish to unset the log channel, send \`/clearChannel moneyLog\`.`
+                    description: `Did you mean to delete the log message? If you wish to unset the log channel, send \`!clearChannel moneyLog\`.`
                 }
             });
         }
@@ -829,7 +829,7 @@ client.on("guildMemberRemove", async function(member) {
 
 async function updateMoneyLog(server, newchannel = "") {
     if (newchannel !== "") {
-        c = server.channels.cache.get(newchannel);
+        c = await server.channels.cache.get(newchannel);
         var logmsg = await getLogMessage(server.id);
         var e = new Discord.MessageEmbed()
             .setTitle(`Money log`)
@@ -879,7 +879,7 @@ async function checkValidUser(userid, serverid, channel) {
                 sql = `SELECT userid FROM users WHERE serverid = ? AND status = 1`;
                 db.get(sql, [serverid]).then((users) => {
                     if (!users) {
-                        channel.send(`No users are set. Set up users using \`/setUser [@user] [emoji]\`.`);
+                        channel.send(`No users are set. Set up users using \`!setUser [@user] [emoji]\`.`);
                     }
                 });
                 resolve(false);
