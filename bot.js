@@ -79,6 +79,12 @@ client.on("message", async function(message) {
             case 'help':
                 channel.send(embedHandler.help);
                 break;
+            case 'moneyhelp':
+                channel.send(embedHandler.moneyHelp);
+                break;
+            case 'setuphelp':
+                channel.send(embedHandler.setupHelp);
+                break;
             case 'setuser':
                 const setUser = getUserFromMention(args[0]);
                 if (!setUser) {
@@ -111,7 +117,7 @@ client.on("message", async function(message) {
                         sql = `INSERT OR REPLACE INTO users (serverid, userid, emoji, status) 
                                         VALUES (?, ?, ?, 1);`;
                         db.run(sql, [server.id, setUser.id, args[1]]).then(() => {
-                            updateMoneyLog(server);
+                            updateLog(server);
                         });
                     }
     
@@ -132,7 +138,7 @@ client.on("message", async function(message) {
                     .then((result) => {
                         if (result === 1) {
                             db.run(`UPDATE users SET status = 0 WHERE userid = ? AND serverid = ?;`, [args[0].slice(3, -1), server.id]).then(() => {
-                                updateMoneyLog(server);
+                                updateLog(server);
                             });
                         }
                     });
@@ -166,7 +172,7 @@ client.on("message", async function(message) {
                 break;
             case 'setchannel':
                 if (args.length < 2) {
-                    channel.send(`Invalid command usage: !setchannel [ transactions | moneyLog | alerts ] [#channel]`)
+                    channel.send(`Invalid command usage: !setchannel {transactions | log | alerts} [#channel]`)
                     break;
                 }
                 setChannel = server.channels.cache.get(args[1].slice(2,-1))
@@ -184,10 +190,10 @@ client.on("message", async function(message) {
                                 }});
                             });
                             break;
-                        case 'moneylog':
+                        case 'log':
                             sql = `UPDATE servers SET logid = ? WHERE serverid = ?;`
                             db.run(sql, [setChannel.id, server.id]).then(() => {
-                                updateMoneyLog(server, setChannel.id);
+                                updateLog(server, setChannel.id);
                                 channel.send({embed:{ 
                                     description: `<#${setChannel.id}> has successfully been set as the money log channel.` 
                                 }});
@@ -202,35 +208,40 @@ client.on("message", async function(message) {
                             });
                             break;
                         default:
-                            channel.send("Invalid channel type. Valid types: transactions | moneyLog | alerts '")
+                            channel.send("Invalid channel type. Valid types: transactions | log | alerts '")
                     }
                 } else {
                     channel.send(`Channel could not be set. Make sure this bot has permissions to send messages in ${args[1]}`);
                 }
                 break;
             case 'clearchannel':
+                let invalid = false;
                 if (args.length < 1) {
-                    channel.send(`Invalid command usage: !clearchannel [transactions | moneyLog | alerts ]`)
+                    channel.send(`Invalid command usage: !clearchannel {transactions | log | alerts}`)
                     break;
                 }
                 switch(args[0].toLowerCase()) {
                     case 'transactions':
                         sql = `UPDATE servers SET transactionsid = "" WHERE serverid = ?;`
                         break;
-                    case 'moneylog':
+                    case 'log':
                         sql = `UPDATE servers SET logid = "" WHERE serverid = ?;`
                         break;
                     case 'alerts':
                         sql = `UPDATE servers SET alertsid = "" WHERE serverid = ?;`
                         break;
                     default:
-                        channel.send("Invalid channel type entered. Valid types: 'transactions', 'moneyLog', 'alerts'")
+                        channel.send("Invalid channel type entered. Valid types: 'transactions', 'log', 'alerts'")
+                        invalid = true;
+                        break;
                 }
-                db.run(sql, [server.id]).then(() => {
-                    channel.send({embed:{ 
-                        description: `Channel has been cleared successfully.` 
-                    }});
-                });
+                if (!invalid) {
+                    db.run(sql, [server.id]).then(() => {
+                        channel.send({embed:{ 
+                            description: `Channel has been cleared successfully.` 
+                        }});
+                    });
+                }
                 break;
             
             // money commands
@@ -280,7 +291,7 @@ client.on("message", async function(message) {
                                             sql = `INSERT INTO transactionhands (serverid, transactionid, owner, recipient)
                                                     VALUES (?, ?, ?, ?);`;
                                             db.run(sql, [server.id, transactionid.lastID, message.author.id, recipient.userid]).then(() => {
-                                                updateMoneyLog(server);
+                                                updateLog(server);
                                             });
                                         })
                                     });
@@ -328,7 +339,7 @@ client.on("message", async function(message) {
                                             sql = `INSERT INTO transactionhands (serverid, transactionid, owner, recipient)
                                                     VALUES (?, ?, ?, ?);`;
                                             db.run(sql, [server.id, transactionid.lastID, message.author.id, recipient.userid]).then(() => {
-                                                updateMoneyLog(server);
+                                                updateLog(server);
                                             });
                                         });
                                     });
@@ -356,7 +367,7 @@ client.on("message", async function(message) {
                                 sql = `INSERT INTO transactionhands (serverid, transactionid, owner, recipient)
                                         VALUES (?, ?, ?, ?);`;
                                 db.run(sql, [server.id, transactionid.lastID, message.author.id, userid]).then(() => {
-                                    updateMoneyLog(server);
+                                    updateLog(server);
                                 });
                             });
                         });
@@ -518,7 +529,7 @@ client.on("message", async function(message) {
                 data = await db.get(sql, [server.id]);
                 if (data.transactionsid == '' || data.transactionsid == channel.id) {
                     if (args.length == 0) {
-                        channel.send(`Invalid command usage: !delete [transaction number to delete]`)
+                        channel.send(`Invalid command usage: !delete [transaction number from !history to delete]`)
                         break;
                     }
                     num = args[0];
@@ -529,6 +540,10 @@ client.on("message", async function(message) {
                     }
                     if (num <= 0) {
                         channel.send(`Invalid command usage: the value submitted must be a positive value.`);
+                        break;
+                    }
+                    if (!Number.isInteger(num)) {
+                        channel.send(`Invalid command usage: the value submitted is not an integer.`);
                         break;
                     }
 
@@ -575,7 +590,7 @@ client.on("message", async function(message) {
                                 if (result === 1) {
                                     transactionid = transactionids[num-1].transactionid
                                     db.run(`DELETE FROM transactions WHERE serverid = ? AND transactionid = ?;`, [server.id, transactionid]).then(() => {
-                                        updateMoneyLog(server);
+                                        updateLog(server);
                                     });
                                     db.run(`DELETE FROM transactionhands WHERE serverid = ? AND transactionid = ?;`, [server.id, transactionid]);
                                 }
@@ -593,9 +608,9 @@ client.on("message", async function(message) {
                         embedHandler.handleClear(channel, message.author.id)
                         .then((result) => {
                             if (result === 1) {
-                                updateMoneyLog(server);
+                                updateLog(server);
                                 db.run(`DELETE FROM transactions WHERE serverid = ?;`, [server.id]).then(() => {
-                                    updateMoneyLog(server);
+                                    updateLog(server);
                                 });
                                 db.run(`DELETE FROM transactionhands WHERE serverid = ?;`, [server.id]);
                             }
@@ -614,8 +629,8 @@ client.on("emojiDelete", async function(emoji) {
     if (user) {
         // delete user from the table, add to deleted users
         db.run(`UPDATE users SET status = 0 WHERE userid = ? AND serverid = ?;`, [user.userid, emoji.guild.id]).then(() => {
-            // update moneylog embed without the user
-            updateMoneyLog(emoji.guild)
+            // update log embed without the user
+            updateLog(emoji.guild)
         });
 
         // send message warning user to re-add the user with a new emoji
@@ -652,8 +667,8 @@ client.on("emojiUpdate", async function(oldEmoji, newEmoji) {
     if (user) {
         // update emoji in sql
         db.run(`UPDATE users SET emoji = ? WHERE userid = ? AND serverid = ?;`, [`<:${newEmoji.name}:${newEmoji.id}>`, user.userid, oldEmoji.guild.id]).then(() => {
-            // update moneylog embed
-            updateMoneyLog(newEmoji.guild);
+            // update log embed
+            updateLog(newEmoji.guild);
         });
     }
 });
@@ -784,7 +799,7 @@ client.on("messageDelete", async function(message) {
                 embed:{
                     title: `⚠️ WARNING ⚠️`,
                     color: 0xFFFF00, 
-                    description: `Did you mean to delete the log message? If you wish to unset the log channel, send \`!clearChannel moneyLog\`.`
+                    description: `Did you mean to delete the log message? If you wish to unset the log channel, send \`!clearChannel log\`.`
                 }
             });
         }
@@ -797,8 +812,8 @@ client.on("guildMemberRemove", async function(member) {
     if (user) {
         // delete user from the table, add to deleted users
         db.run(`UPDATE users SET status = 0 WHERE userid = ? AND serverid = ?;`, [user.userid, member.guild.id]).then(() => {
-            // update moneylog embed without the user
-            updateMoneyLog(member.guild)
+            // update log embed without the user
+            updateLog(member.guild)
         });
 
         // send message warning user to re-add the user with a new emoji
@@ -827,7 +842,7 @@ client.on("guildMemberRemove", async function(member) {
     }
 });
 
-async function updateMoneyLog(server, newchannel = "") {
+async function updateLog(server, newchannel = "") {
     if (newchannel !== "") {
         c = await server.channels.cache.get(newchannel);
         var logmsg = await getLogMessage(server.id);
