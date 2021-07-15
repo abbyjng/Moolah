@@ -845,10 +845,7 @@ client.on("guildMemberRemove", async function(member) {
 async function updateLog(server, newchannel = "") {
     if (newchannel !== "") {
         c = await server.channels.cache.get(newchannel);
-        var logmsg = await getLogMessage(server.id);
-        var e = new Discord.MessageEmbed()
-            .setTitle(`Money log`)
-            .setDescription(logmsg)
+        var e = await getLogEmbed(server);
         c.send(e).then((m) => {
             sql = `UPDATE servers SET logembed = ? WHERE serverid = ?;`
             db.run(sql, [m.id, server.id]);
@@ -861,10 +858,7 @@ async function updateLog(server, newchannel = "") {
             c.messages.fetch(data.logembed)
                 .then((oldEmbed) => {
                     (async function() {
-                        var logmsg = await getLogMessage(server.id);
-                        embed = new Discord.MessageEmbed()
-                                .setTitle(`Money log`)
-                                .setDescription(logmsg)
+                        embed = await getLogEmbed(server);
                         oldEmbed.edit(embed)
                     })();
                 })
@@ -903,7 +897,8 @@ async function checkValidUser(userid, serverid, channel) {
     });
 }
 
-async function getLogMessage(serverid) {
+async function getLogEmbed(server) {
+    var serverid = server.id;
     return new Promise((resolve, reject) => {
         var log = {}
         // populate the log dictionary with users
@@ -912,9 +907,9 @@ async function getLogMessage(serverid) {
             if (users.length <= 1) {
                 resolve(`No transactions available.`)
             }
-            var logmsg = ``;
+            var description = ``
             users.forEach((user) => {
-                logmsg += `<@!${user.userid}>: ${user.emoji}\n`;
+                description += `<@!${user.userid}>: ${user.emoji}\n`;
                 log[user.userid] = {}
                 users.forEach((otherUser) => {
                     if (otherUser.userid != user.userid) {
@@ -923,7 +918,10 @@ async function getLogMessage(serverid) {
                 }) 
             })
 
-            logmsg += `----------\n`;
+            var returnEmbed = {embed:{}};
+            returnEmbed.embed.title = "Money log";
+            returnEmbed.embed.description = description;
+            returnEmbed.embed.color = 0x2471a3
 
             // get all transactions and handle them
             sql =  `SELECT
@@ -954,16 +952,24 @@ async function getLogMessage(serverid) {
                     }
                 })
 
+                returnEmbed.embed.fields = [];
+
                 for (user in log) {
-                    logmsg += `<@!${user}> owes:\n`;
+                    var newField = {
+                        name: `-----`,
+                        value: ``
+                    };
+                    var value = `<@!${user}> owes:\n`;
 
                     for (key in log[user]) {
-                        logmsg += `$${log[user][key].value.toFixed(2)} to ${log[user][key].emoji} | `
+                        value += `$${log[user][key].value.toFixed(2)} to ${log[user][key].emoji} | `
                     }
-                    logmsg = logmsg.slice(0, -2) + `\n\n`;
+                    value = value.slice(0, -2) + `\n`;
+                    newField.value = value;
+                    returnEmbed.embed.fields.push(newField);
                 }
 
-                resolve(logmsg);
+                resolve(returnEmbed);
             })
         })
     })
