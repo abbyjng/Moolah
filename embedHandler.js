@@ -231,7 +231,7 @@ module.exports = {
                 }
             })
             emojis.push('❌');
-            emojis.push('☑️');
+            emojis.push('✅');
 
             info = {
                 recipients: [],
@@ -247,13 +247,13 @@ module.exports = {
                     { name: `Select recipients of this transaction:`, value: strUsers },
                     { name: `Current recipients:`, value: getInfoString(info, users.length) }
                 )
-                .setFooter(`React with ☑️ when finished selecting recipients.\nReact with ❌ to cancel this transaction.`);
+                .setFooter(`React with ✅ when finished selecting recipients.\nReact with ❌ to cancel this transaction.`);
             channel.send(embed)
             .then((m) => {
                 t[(m.createdAt, authorid)] = info;
 
                 Promise.all(
-                    [m.react('☑️')].concat(
+                    [m.react('✅')].concat(
                         users.map((user) => {
                             if (user.emoji.charAt(0) === '<') {
                                 return m.react(user.emoji.slice(user.emoji.indexOf(":", 2) + 1, -1));
@@ -275,7 +275,7 @@ module.exports = {
         
                 collector.on('collect', (reaction, user) => {
                     if (user.id === authorid) {
-                        if (reaction.emoji.name === '☑️') {
+                        if (reaction.emoji.name === '✅') {
                             if (t[(m.createdAt, authorid)].recipients.length == 0) {
                                 t[(m.createdAt, authorid)].recipients = users;
                             }
@@ -310,7 +310,7 @@ module.exports = {
                                     { name: `Select recipients of this transaction:`, value: strUsers },
                                     { name: `Current recipients:`, value: getInfoString(t[(m.createdAt, authorid)], users.length) }
                                 )
-                                .setFooter(`React with ☑️ when finished selecting recipients.\nReact with ❌ to cancel this transaction.`);
+                                .setFooter(`React with ✅ when finished selecting recipients.\nReact with ❌ to cancel this transaction.`);
                             m.edit(newEmbed);
                         }
                     }
@@ -332,7 +332,7 @@ module.exports = {
                             { name: `Select recipients of this transaction:`, value: strUsers },
                             { name: `Current recipients:`, value: getInfoString(t[(m.createdAt, authorid)], users.length) }
                         )
-                        .setFooter(`React with ☑️ when finished selecting recipients.\nReact with ❌ to cancel this transaction.`);
+                        .setFooter(`React with ✅ when finished selecting recipients.\nReact with ❌ to cancel this transaction.`);
                     m.edit(newEmbed);
                 });
     
@@ -433,15 +433,15 @@ module.exports = {
     },
     handleClear: async (channel, authorid) => {
         return new Promise((resolve, reject) => {
-            emojis = ['❌', '☑️'];
+            emojis = ['❌', '✅'];
         
             embed = new Discord.MessageEmbed()
                 .setDescription(`**Warning:** By confirming this action, all transactions logged in this server will be permanently deleted. Do you wish to continue?`)
-                .setFooter(`React with ☑️ to confirm or ❌ to cancel this action.`);
+                .setFooter(`React with ✅ to confirm or ❌ to cancel this action.`);
             channel.send(embed)
             .then((m) => {
                 Promise.all([
-                    m.react('☑️'),
+                    m.react('✅'),
                     m.react('❌')
                 ]).catch(error => console.error('One of the emojis failed to react:', error))
                 
@@ -466,7 +466,7 @@ module.exports = {
                     } else if (collected.keys().next().value === '❌') {
                         resolve(0);
                         cancelled(channel, `Action cancelled - transactions have not been cleared.`);
-                    } else if (collected.keys().next().value === '☑️') {
+                    } else if (collected.keys().next().value === '✅') {
                         resolve(1);
                         confirmed(channel, `Transactions cleared successfully.`);
                     }
@@ -477,7 +477,7 @@ module.exports = {
     },
     handleDelete: async (channel, authorid, transaction, recipients, number) => {
         return new Promise((resolve, reject) => {
-            emojis = ['❌', '☑️'];
+            emojis = ['❌', '✅'];
 
             var descString = `**Transaction #${number}:**\n`;
             if (transaction.description !== "defaultPaidDescription") {
@@ -490,18 +490,18 @@ module.exports = {
                 }
                 descString += `"${transaction.description}" | ${getFormattedDate(transaction.created)}\n`
             } else {
-                descString += `${i + 1}) <@!${transaction.owner}> paid ${recipients[0].emoji} `
-                descString += `[$${(transactions[i].value).toFixed(2)}] | ${getFormattedDate(transaction.created)}\n`
+                descString += `<@!${recipients[0].owner}> paid ${recipients[0].emoji} `
+                descString += `[$${(transaction.value).toFixed(2)}] | ${getFormattedDate(transaction.created)}\n`
             }
         
             embed = new Discord.MessageEmbed()
                 .setTitle(`Delete this transaction?`)
                 .setDescription(descString)
-                .setFooter(`React with ☑️ to confirm or ❌ to cancel this action.`);
+                .setFooter(`React with ✅ to confirm or ❌ to cancel this action.`);
             channel.send(embed)
             .then((m) => {
                 Promise.all([
-                    m.react('☑️'),
+                    m.react('✅'),
                     m.react('❌')
                 ]).catch(error => console.error('One of the emojis failed to react:', error))
                 
@@ -526,7 +526,7 @@ module.exports = {
                     } else if (collected.keys().next().value === '❌') {
                         resolve(0);
                         cancelled(channel, `Action cancelled - transaction #${number} has not been deleted.`);
-                    } else if (collected.keys().next().value === '☑️') {
+                    } else if (collected.keys().next().value === '✅') {
                         resolve(1);
                         confirmed(channel, `Transaction #${number} deleted successfully.`);
                     }
@@ -537,18 +537,18 @@ module.exports = {
     },
     handleRemove: async (channel, authorid, userid) => {
         return new Promise((resolve, reject) => {
-            emojis = ['❌', '☑️'];
+            emojis = ['❌', '✅'];
 
             var descString = `Removing user <@!${userid}> remove them from the log and not allow them to create new transactions. They will still appear in the transaction log.\n`;
         
             embed = new Discord.MessageEmbed()
                 .setTitle(`Remove this user?`)
                 .setDescription(descString)
-                .setFooter(`React with ☑️ to confirm or ❌ to cancel this action.`);
+                .setFooter(`React with ✅ to confirm or ❌ to cancel this action.`);
             channel.send(embed)
             .then((m) => {
                 Promise.all([
-                    m.react('☑️'),
+                    m.react('✅'),
                     m.react('❌')
                 ]).catch(error => console.error('One of the emojis failed to react:', error))
                 
@@ -573,7 +573,7 @@ module.exports = {
                     } else if (collected.keys().next().value === '❌') {
                         resolve(0);
                         cancelled(channel, `Action cancelled - user <@!${userid}> has not been removed.`);
-                    } else if (collected.keys().next().value === '☑️') {
+                    } else if (collected.keys().next().value === '✅') {
                         resolve(1);
                         confirmed(channel, `User <@!${userid}> removed successfully.`);
                     }

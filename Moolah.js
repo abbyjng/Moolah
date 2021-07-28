@@ -108,8 +108,8 @@ client.on("message", async function(message) {
                                         VALUES (?, ?, ?, 1);`;
                         db.run(sql, [server.id, setUser.id, args[1]]);
                     } else { // default emoji
-                        if (args[1] == '☑️') {
-                            channel.send(`Emoji could not be set. ☑️ is an invalid emoji, try something else.`);
+                        if (args[1] == '✅') {
+                            channel.send(`Emoji could not be set. ✅ is an invalid emoji, try something else.`);
                             break;
                         } else if (args[1] == '❌') {
                             channel.send(`Emoji could not be set. ❌ is an invalid emoji, try something else.`);
@@ -542,7 +542,7 @@ client.on("message", async function(message) {
                         channel.send(`Invalid command usage: the value submitted must be a positive value.`);
                         break;
                     }
-                    if (!Number.isInteger(num)) {
+                    if (!Number.isInteger(parseFloat(num))) {
                         channel.send(`Invalid command usage: the value submitted is not an integer.`);
                         break;
                     }
