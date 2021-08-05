@@ -683,7 +683,7 @@ For more information on these commands, use \`!moneyHelp\`.`
                 },
                 {
                     name: `!setUser [@user] [emoji]`,
-                    value: `Registers a user with the bot and assigns them to an emoji. This emoji may be custom, but must be from within the local server. The emoji must be unique to this user. The first input should mention the user using the @ functionality.\n----------`
+                    value: `Registers a user with the bot and assigns them to an emoji. This emoji may be custom, but must be from within the local server. The emoji must be unique to this user. The first input should mention the user using the @ functionality. If the given user has already been set, their emoji will be updated to the emoji provided.\n----------`
                 },
                 {
                     name: `!removeUser [@user]`,
