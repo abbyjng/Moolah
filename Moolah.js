@@ -1,4 +1,5 @@
 const Discord = require('discord.js');
+const { Permissions } = require('discord.js');
 const auth = require('./auth.json');
 const fs = require('fs');
 
@@ -11,9 +12,9 @@ const embedHandler = require('./embedHandler.js')
 let db;
 
 // Initialize Discord Bot
-const intents = ["GUILDS", "GUILD_MEMBERS", "GUILD_MESSAGES", "GUILD_MESSAGE_REACTIONS", "GUILD_EMOJIS"];
+const intents = ["GUILDS", "GUILD_MEMBERS", "GUILD_MESSAGES", "GUILD_MESSAGE_REACTIONS"];
 const partials = ['GUILD_MEMBER'];
-const client = new Discord.Client({intents: intents, partials: partials, ws:{intents: intents}, disableEveryone: false});
+const client = new Discord.Client({intents: intents, partials: partials, disableEveryone: false});
 
 client.on("ready", async () => {
     // open database
@@ -51,21 +52,21 @@ client.on('guildCreate', server => {
     // send initial message
     let defaultChannel = "";
     server.channels.cache.forEach((channel) => {
-        if (channel.type == "text" && defaultChannel == "") {
-            if (channel.permissionsFor(server.me).has("SEND_MESSAGES")) {
+        if (channel.type == 'GUILD_TEXT' && defaultChannel == "") {
+            if (channel.permissionsFor(server.me).has(Permissions.FLAGS.SEND_MESSAGES)) {
                 defaultChannel = channel;
             }
         }
     })
     //defaultChannel will be the channel object that it first finds the bot has permissions for
-    defaultChannel.send(embedHandler.welcome);
+    defaultChannel.send({embeds: [embedHandler.welcome]});
 });
 
 client.on('guildDelete', server => {
     db.run(`DELETE FROM servers WHERE serverid = ?;`, [server.id]);
 });
 
-client.on("message", async function(message) {
+client.on("messageCreate", async function(message) {
     if (message.content.substring(0, 1) != '!') {
         return;
     }
@@ -79,31 +80,31 @@ client.on("message", async function(message) {
     switch(cmd) {
         // setup and logistics
         case 'help':
-            channel.send(embedHandler.help);
+            channel.send({embeds: [embedHandler.help]});
             break;
         case 'moneyhelp':
-            channel.send(embedHandler.moneyHelp);
+            channel.send({embeds: [embedHandler.moneyHelp]});
             break;
         case 'setuphelp':
-            channel.send(embedHandler.setupHelp);
+            channel.send({embeds: [embedHandler.setupHelp]});
             break;
         case 'setuser':
             const setUser = getUserFromMention(args[0]);
             if (!setUser) {
-                channel.send({embed:{ description: `User could not be set. Link user query like so: <@!839639502767259669>` }});
+                channel.send({embeds: [{ description: `User could not be set. Link user query like so: <@!839639502767259669>` }]});
                 break;
             }
             sql = `SELECT userid FROM users WHERE emoji = ? AND serverid = ? AND status = 1`
             result = await db.get(sql, [args[1], server.id]);
             if (result) {
-                channel.send({embed:{ description: `Emoji could not be set. This emoji has already been assigned to <@${result.userid}>.` }});
+                channel.send({embeds: [{ description: `Emoji could not be set. This emoji has already been assigned to <@${result.userid}>.` }]});
                 break;
             } else {                    
                 if (args[1].charAt(0) == "<") { // server specific emoji
                     // search for emoji within server
                     emoji = server.emojis.cache.find(emoji => emoji.id === args[1].slice(args[1].indexOf(":", 2) + 1, -1));
                     if (!emoji) { // emoji doesn't exist in server
-                        channel.send({embed:{ description: `Emoji could not be set. Emojis must be default or available in this server.` }});
+                        channel.send({embeds: [{ description: `Emoji could not be set. Emojis must be default or available in this server.` }]});
                         break;
                     }
                     sql = `INSERT OR REPLACE INTO users (serverid, userid, emoji, status) 
@@ -111,10 +112,10 @@ client.on("message", async function(message) {
                     db.run(sql, [server.id, setUser.id, args[1]]);
                 } else { // default emoji
                     if (args[1] == '✅') {
-                        channel.send({embed:{ description: `Emoji could not be set. ✅ is an invalid emoji, try something else.` }});
+                        channel.send({embeds: [{ description: `Emoji could not be set. ✅ is an invalid emoji, try something else.` }]});
                         break;
                     } else if (args[1] == '❌') {
-                        channel.send({embed:{ description: `Emoji could not be set. ❌ is an invalid emoji, try something else.` }});
+                        channel.send({embeds: [{ description: `Emoji could not be set. ❌ is an invalid emoji, try something else.` }]});
                     }
                     sql = `INSERT OR REPLACE INTO users (serverid, userid, emoji, status) 
                                     VALUES (?, ?, ?, 1);`;
@@ -123,13 +124,13 @@ client.on("message", async function(message) {
                     });
                 }
 
-                channel.send({embed:{ description: `User ${args[0]} successfully set to ${args[1]}.` }});
+                channel.send({embeds: [{ description: `User ${args[0]} successfully set to ${args[1]}.` }]});
             }
             break;
         case 'removeuser':
             removeUser = server.members.cache.find(user => user.id === args[0].slice(3, -1));
             if (!removeUser) {
-                channel.send({embed:{ description: `User could not be removed. Link user query like so: <@!839639502767259669>` }});
+                channel.send({embeds: [{ description: `User could not be removed. Link user query like so: <@!839639502767259669>` }]});
                 break;
             }
             
@@ -147,10 +148,10 @@ client.on("message", async function(message) {
         case 'userlist':
             sql = `SELECT userid, emoji FROM users WHERE serverid = ? AND status = 1`;
             users = await db.all(sql, [server.id])
-            channel.send({ embed:{ fields: [{
+            channel.send({embeds: [{ fields: [{
                 name: `User list`,
                 value: getFormattedUsers(users).slice(0, -1) || `No users set.`
-            }]}})
+            }]}]})
             break;
         case 'channellist':
             sql = `SELECT transactionsid, logid, alertsid FROM servers WHERE serverid = ?`;
@@ -165,53 +166,53 @@ client.on("message", async function(message) {
             channels += `Alerts channel: `
             channels += val.alertsid ? `<#${val.alertsid}>\n` : `not set\n`
 
-            channel.send({ embed:{ fields: [{
+            channel.send({embeds: [{  fields: [{
                 name: `Channel list`,
                 value: channels
-            }]}})
+            }]}]})
             break;
         case 'setchannel':
             if (args.length < 2) {
-                channel.send({embed:{ description: `Invalid command usage: \`!setchannel {transactions | log | alerts} [#channel]\`` }});
+                channel.send({embeds: [{ description: `Invalid command usage: \`!setchannel {transactions | log | alerts} [#channel]\`` }]});
                 break;
             }
             setChannel = server.channels.cache.get(args[1].slice(2,-1))
             if (!setChannel) {
-                channel.send({embed:{ description: `Channel could not be set. Link channel query like so: <#${channel.id}>` }});
+                channel.send({embeds: [{ description: `Channel could not be set. Link channel query like so: <#${channel.id}>` }]});
                 break;
             }
-            if (setChannel.type == "text" && setChannel.permissionsFor(server.me).has("SEND_MESSAGES")) {
+            if (setChannel.type == 'GUILD_TEXT' && setChannel.permissionsFor(server.me).has(Permissions.FLAGS.SEND_MESSAGES)) {
                 switch(args[0].toLowerCase()) {
                     case 'transactions':
                         sql = `UPDATE servers SET transactionsid = ? WHERE serverid = ?;`
                         db.run(sql, [setChannel.id, server.id]).then(() => {
-                            channel.send({embed:{ description: `<#${setChannel.id}> has successfully been set as the transactions channel.` }});
+                            channel.send({embeds: [{ description: `<#${setChannel.id}> has successfully been set as the transactions channel.` }]});
                         });
                         break;
                     case 'log':
                         sql = `UPDATE servers SET logid = ? WHERE serverid = ?;`
                         db.run(sql, [setChannel.id, server.id]).then(() => {
                             updateLog(server, setChannel.id);
-                            channel.send({embed:{ description: `<#${setChannel.id}> has successfully been set as the money log channel.` }});
+                            channel.send({embeds: [{ description: `<#${setChannel.id}> has successfully been set as the money log channel.` }]});
                         });
                         break;
                     case 'alerts':
                         sql = `UPDATE servers SET alertsid = ? WHERE serverid = ?;`
                         db.run(sql, [setChannel.id, server.id]).then(() => {
-                            channel.send({embed:{ description: `<#${setChannel.id}> has successfully been set as the alerts channel.` }});
+                            channel.send({embeds: [{ description: `<#${setChannel.id}> has successfully been set as the alerts channel.` }]});
                         });
                         break;
                     default:
-                        channel.send({embed:{ description: `Invalid channel type. Valid types: \`transactions | log | alerts\`` }});
+                        channel.send({embeds: [{ description: `Invalid channel type. Valid types: \`transactions | log | alerts\`` }]});
                 }
             } else {
-                channel.send({embed:{ description: `Channel could not be set. Make sure this bot has permissions to send messages in ${args[1]}` }});
+                channel.send({embeds: [{ description: `Channel could not be set. Make sure this bot has permissions to send messages in ${args[1]}` }]});
             }
             break;
         case 'clearchannel':
             let invalid = false;
             if (args.length < 1) {
-                channel.send({embed:{ description: `Invalid command usage: \`!clearchannel {transactions | log | alerts}\`` }});
+                channel.send({embeds: [{ description: `Invalid command usage: \`!clearchannel {transactions | log | alerts}\`` }]});
                 break;
             }
             switch(args[0].toLowerCase()) {
@@ -225,13 +226,13 @@ client.on("message", async function(message) {
                     sql = `UPDATE servers SET alertsid = "" WHERE serverid = ?;`
                     break;
                 default:
-                    channel.send({embed:{ description: `Invalid channel type. Valid types: \`transactions | log | alerts\`` }});
+                    channel.send({embeds: [{ description: `Invalid channel type. Valid types: \`transactions | log | alerts\`` }]});
                     invalid = true;
                     break;
             }
             if (!invalid) {
                 db.run(sql, [server.id]).then(() => {
-                    channel.send({embed:{ description: `Channel has been cleared successfully.` }});
+                    channel.send({embeds: [{ description: `Channel has been cleared successfully.` }]});
                 });
             }
             break;
@@ -243,7 +244,7 @@ client.on("message", async function(message) {
             data = await db.get(sql, [server.id]);
             if (data.transactionsid == '' || data.transactionsid == channel.id) {
                 if (args.length == 0) {
-                    channel.send({embed:{ description: `Invalid command usage: \`!bought [value] [description of transaction]\`` }});
+                    channel.send({embeds: [{ description: `Invalid command usage: \`!bought [value] [description of transaction]\`` }]});
                     break;
                 }
                 cost = args[0];
@@ -254,16 +255,16 @@ client.on("message", async function(message) {
                 }
 
                 if (isNaN(cost)) {
-                    channel.send({embed:{ description: `Invalid command usage: the value submitted is not a number.` }});
+                    channel.send({embeds: [{ description: `Invalid command usage: the value submitted is not a number.` }]});
                     break;
                 } else if (cost <= 0) {
-                    channel.send({embed:{ description: `Invalid command usage: the value submitted must be a positive value.` }});
+                    channel.send({embeds: [{ description: `Invalid command usage: the value submitted must be a positive value.` }]});
                     break;
                 } else if (description === "defaultPaidDescription") {
-                    channel.send({embed:{ description: `Congrats! You've found the one description message you are not allowed to use. Please try again.` }});
+                    channel.send({embeds: [{ description: `Congrats! You've found the one description message you are not allowed to use. Please try again.` }]});
                     break;
                 } else if (description.length > 200) {
-                    channel.send({embed:{ description: `Invalid command usage: the description submitted must be <200 characters long.` }});
+                    channel.send({embeds: [{ description: `Invalid command usage: the description submitted must be <200 characters long.` }]});
                     break;
                 }
 
@@ -290,9 +291,9 @@ client.on("message", async function(message) {
                     });
                 })();
             } else {
-                channel.send({embed:{ 
+                channel.send({embeds: [{ 
                     description: `\`!bought\` is a transaction command and can only be used within the set transactions channel, <#${data.transactionsid}>` 
-                }});
+                }]});
             }
             break;
         case 'paid':
@@ -301,7 +302,7 @@ client.on("message", async function(message) {
             data = await db.get(sql, [server.id]);
             if (data.transactionsid == '' || data.transactionsid == channel.id) {
                 if (args.length == 0 || args.length > 2) {
-                    channel.send({embed:{ description: `Invalid command usage: \`!paid [value] [emoji of recipient]\`` }});
+                    channel.send({embeds: [{ description: `Invalid command usage: \`!paid [value] [emoji of recipient]\`` }]});
                     break;
                 }
                 cost = args[0];
@@ -310,11 +311,11 @@ client.on("message", async function(message) {
                     cost = cost.slice(1);
                 }
                 if (isNaN(cost)) {
-                    channel.send({embed:{ description: `Invalid command usage: the value submitted is not a number.` }});
+                    channel.send({embeds: [{ description: `Invalid command usage: the value submitted is not a number.` }]});
                     break;
                 }
                 if (cost <= 0) {
-                    channel.send({embed:{ description: `Invalid command usage: the value submitted must be a positive value.` }});
+                    channel.send({embeds: [{ description: `Invalid command usage: the value submitted must be a positive value.` }]});
                     break;
                 }
 
@@ -345,12 +346,12 @@ client.on("message", async function(message) {
                     sql = `SELECT userid FROM users WHERE emoji = ? AND serverid = ? AND status = 1`;
                     userid = await db.get(sql, [args[1], server.id]);
                     if (!userid) {
-                        channel.send({embed:{ description: `User not found: ${args[1]} is not associated with any user in this server.` }});
+                        channel.send({embeds: [{ description: `User not found: ${args[1]} is not associated with any user in this server.` }]});
                         break;
                     }
                     userid = userid.userid
                     if (userid === message.author.id) {
-                        channel.send({embed:{ description: `Why are you trying to pay yourself? That's not allowed` }});
+                        channel.send({embeds: [{ description: `Why are you trying to pay yourself? That's not allowed` }]});
                         break;
                     }
                     // insert into transactions
@@ -368,9 +369,9 @@ client.on("message", async function(message) {
                     embedHandler.confirmPayment(channel, message.author.id, userid, args[1], cost);
                 }
             } else {
-                channel.send({embed:{ 
+                channel.send({embeds: [{ 
                     description: `\`!paid\` is a transaction command and can only be used within the set transactions channel, <#${data.transactionsid}>` 
-                }});
+                }]});
             }
             break;
         case 'owe':
@@ -445,7 +446,7 @@ client.on("message", async function(message) {
                         }
                         if (youowe === ``) { youowe = `None`; }
 
-                        channel.send({ embed:{ fields: [
+                        channel.send({embeds: [{ fields: [
                             {
                                 name: `**Owes you:**`,
                                 value: oweyou,
@@ -456,13 +457,13 @@ client.on("message", async function(message) {
                                 value: youowe,
                                 inline: true
                             }
-                        ]}})
+                        ]}]})
                     })
                 })
             } else {
-                channel.send({embed:{ 
+                channel.send({embeds: [{
                     description: `\`!owe\` is a transaction command and can only be used within the set transactions channel, <#${data.transactionsid}>` 
-                }});
+                }]});
             }
             break;
         case 'history':
@@ -523,9 +524,9 @@ client.on("message", async function(message) {
                     })
                 })
             } else {
-                channel.send({embed:{ 
+                channel.send({embeds: [{ 
                     description: `\`!history\` is a transaction command and can only be used within the set transactions channel, <#${data.transactionsid}>` 
-                }});
+                }]});
             }
             break;
         case 'delete':
@@ -534,21 +535,21 @@ client.on("message", async function(message) {
             data = await db.get(sql, [server.id]);
             if (data.transactionsid == '' || data.transactionsid == channel.id) {
                 if (args.length == 0) {
-                    channel.send({embed:{ description: `Invalid command usage: \`!delete [transaction number from !history to delete]\`` }});
+                    channel.send({embeds: [{ description: `Invalid command usage: \`!delete [transaction number from !history to delete]\`` }]});
                     break;
                 }
                 num = args[0];
 
                 if (isNaN(num) && num !== "last") {
-                    channel.send({embed:{ description: `Invalid command usage: the value submitted is not a number.` }});
+                    channel.send({embeds: [{ description: `Invalid command usage: the value submitted is not a number.` }]});
                     break;
                 }
                 if (num <= 0) {
-                    channel.send({embed:{ description: `Invalid command usage: the value submitted must be a positive value.` }});
+                    channel.send({embeds: [{ description: `Invalid command usage: the value submitted must be a positive value.` }]});
                     break;
                 }
                 if (!Number.isInteger(parseFloat(num))) {
-                    channel.send({embed:{ description: `Invalid command usage: the value submitted is not an integer.` }});
+                    channel.send({embeds: [{ description: `Invalid command usage: the value submitted is not an integer.` }]});
                     break;
                 }
 
@@ -575,7 +576,7 @@ client.on("message", async function(message) {
                 });
 
                 if (num > transactionids.length) {
-                    channel.send({embed:{ description: `Invalid command usage: ${num} is not a valid transaction number.` }});
+                    channel.send({embeds: [{ description: `Invalid command usage: ${num} is not a valid transaction number.` }]});
                 } else {
                     sql = ` SELECT 
                                 owner,  
@@ -603,9 +604,9 @@ client.on("message", async function(message) {
                     })();
                 }
             } else {
-                channel.send({embed:{ 
+                channel.send({embeds: [{
                     description: `\`!delete\` is a transaction command and can only be used within the set transactions channel, <#${data.transactionsid}>` 
-                }});
+                }]});
             }
             break;
         case 'cleartransactions':
@@ -626,9 +627,9 @@ client.on("message", async function(message) {
                     });
                 })();
             } else {
-                channel.send({embed:{ 
-                    description: `\`!bought\` is a transaction command and can only be used within the set transactions channel, <#${data.transactionsid}>` 
-                }});
+                channel.send({embeds: [{
+                    description: `\`!clearTransactions\` is a transaction command and can only be used within the set transactions channel, <#${data.transactionsid}>` 
+                }]});
             }
             break;
     }
@@ -653,22 +654,20 @@ client.on("emojiDelete", async function(emoji) {
             defaultChannel = emoji.guild.channels.cache.get(s.alertsid);
         } else {
             channel.guild.channels.cache.forEach((channel) => {
-                if (channel.type == "text" && defaultChannel == "") {
-                    if (channel.permissionsFor(channel.guild.me).has("SEND_MESSAGES")) {
+                if (channel.type == 'GUILD_TEXT' && defaultChannel == "") {
+                    if (channel.permissionsFor(channel.guild.me).has(Permissions.FLAGS.SEND_MESSAGES)) {
                         defaultChannel = channel;
                     }
                 }
             })
         }
         //defaultChannel will be the channel object that it first finds the bot has permissions for
-        defaultChannel.send({
-            embed:{
-                title: `‼️ WARNING ‼️`,
-                color: 0xFF0000, 
-                description: `The emoji previously called :${emoji.name}: was deleted.
-                This emoji was connected to <@!${user.userid}>. Please assign a new emoji to <@!${user.userid}>. Until this is done, this user will be removed from the database.`
-            }
-        });
+        defaultChannel.send({embeds: [{
+            title: `‼️ WARNING ‼️`,
+            color: 0xFF0000, 
+            description: `The emoji previously called :${emoji.name}: was deleted.
+            This emoji was connected to <@!${user.userid}>. Please assign a new emoji to <@!${user.userid}>. Until this is done, this user will be removed from the database.`
+        }]});
     }
 });
 
@@ -714,8 +713,8 @@ client.on("channelDelete", async function(channel) {
             defaultChannel = channel.guild.channels.cache.get(s.alertsid);
         } else {
             channel.guild.channels.cache.forEach((channel) => {
-                if (channel.type == "text" && defaultChannel == "") {
-                    if (channel.permissionsFor(channel.guild.me).has("SEND_MESSAGES")) {
+                if (channel.type == 'GUILD_TEXT' && defaultChannel == "") {
+                    if (channel.permissionsFor(channel.guild.me).has(Permissions.FLAGS.SEND_MESSAGES)) {
                         defaultChannel = channel;
                     }
                 }
@@ -723,13 +722,11 @@ client.on("channelDelete", async function(channel) {
         }
         
         //defaultChannel will be the channel object that it first finds the bot has permissions for
-        defaultChannel.send({
-            embed:{
-                title: `‼️ WARNING ‼️`,
-                color: 0xFF0000, 
-                description: `The channel previously set as the ${ch} channel has been deleted. This channel has been unset.`
-            }
-        });
+        defaultChannel.send({embeds: [{
+            title: `‼️ WARNING ‼️`,
+            color: 0xFF0000, 
+            description: `The channel previously set as the ${ch} channel has been deleted. This channel has been unset.`
+        }]});
     }
 });
 
@@ -741,9 +738,7 @@ client.on("channelUpdate", async function(oldChannel, newChannel) {
               OR alertsid = ?)`
     s = await db.get(sql, [oldChannel.guild.id, oldChannel.id, oldChannel.id, oldChannel.id]);
     if (s) {
-        if (setChannel.type !== "text" || !setChannel.permissionsFor(server.me).has("SEND_MESSAGES")) {
-                console.log(newChannel.type)
-                console.log(newChannel.permissionsFor(newChannel.guild.me))
+        if (setChannel.type !== 'GUILD_TEXT' || !setChannel.permissionsFor(server.me).has(Permissions.FLAGS.SEND_MESSAGES)) {
             let ch = "";
             switch (oldChannel.id) {
                 case s.transactionsid:
@@ -765,8 +760,8 @@ client.on("channelUpdate", async function(oldChannel, newChannel) {
                 defaultChannel = oldChannel.guild.channels.cache.get(s.alertsid);;
             } else {
                 channel.guild.channels.cache.forEach((channel) => {
-                    if (channel.type == "text" && defaultChannel == "") {
-                        if (channel.permissionsFor(channel.guild.me).has("SEND_MESSAGES")) {
+                    if (channel.type == 'GUILD_TEXT' && defaultChannel == "") {
+                        if (channel.permissionsFor(channel.guild.me).has(Permissions.FLAGS.SEND_MESSAGES)) {
                             defaultChannel = channel;
                         }
                     }
@@ -774,13 +769,11 @@ client.on("channelUpdate", async function(oldChannel, newChannel) {
             }
 
             //defaultChannel will be the channel object that it first finds the bot has permissions for
-            defaultChannel.send({
-                embed:{
-                    title: `‼️ WARNING ‼️`,
-                    color: 0xFF0000, 
-                    description: `The channel previously set as the ${ch} channel has been changed so that Moolah no longer can access it. This channel has been unset.`
-                } 
-            });
+            defaultChannel.send({embeds: [{
+                title: `‼️ WARNING ‼️`,
+                color: 0xFF0000, 
+                description: `The channel previously set as the ${ch} channel has been changed so that Moolah no longer can access it. This channel has been unset.`
+            }]});
         }
     }
 });
@@ -799,21 +792,19 @@ client.on("messageDelete", async function(message) {
                 defaultChannel = message.guild.channels.cache.get(data.alertsid);
             } else {
                 channel.guild.channels.cache.forEach((channel) => {
-                    if (channel.type == "text" && defaultChannel == "") {
-                        if (channel.permissionsFor(channel.guild.me).has("SEND_MESSAGES")) {
+                    if (channel.type == 'GUILD_TEXT' && defaultChannel == "") {
+                        if (channel.permissionsFor(channel.guild.me).has(Permissions.FLAGS.SEND_MESSAGES)) {
                             defaultChannel = channel;
                         }
                     }
                 })
             }
             //defaultChannel will be the channel object that it first finds the bot has permissions for
-            defaultChannel.send({
-                embed:{
-                    title: `⚠️ WARNING ⚠️`,
-                    color: 0xFFFF00, 
-                    description: `Did you mean to delete the log message? If you wish to unset the log channel, send \`!clearChannel log\`.`
-                }
-            });
+            defaultChannel.send({embeds: [{
+                title: `⚠️ WARNING ⚠️`,
+                color: 0xFFFF00, 
+                description: `Did you mean to delete the log message? If you wish to unset the log channel, send \`!clearChannel log\`.`
+            }]});
         }
     }
 });
@@ -835,8 +826,8 @@ client.on("guildMemberRemove", async function(member) {
             defaultChannel = member.guild.channels.cache.get(s.alertsid);
         } else {
             channel.guild.channels.cache.forEach((channel) => {
-                if (channel.type == "text" && defaultChannel == "") {
-                    if (channel.permissionsFor(channel.guild.me).has("SEND_MESSAGES")) {
+                if (channel.type == 'GUILD_TEXT' && defaultChannel == "") {
+                    if (channel.permissionsFor(channel.guild.me).has(Permissions.FLAGS.SEND_MESSAGES)) {
                         defaultChannel = channel;
                     }
                 }
@@ -844,13 +835,11 @@ client.on("guildMemberRemove", async function(member) {
         }
 
         //defaultChannel will be the channel object that it first finds the bot has permissions for
-        defaultChannel.send({
-            embed:{
-                title: `‼️ WARNING ‼️`,
-                color: 0xFF0000, 
-                description: `The user <@!${member.id}> has left this server. They have been removed from the database.`
-            }
-        });
+        defaultChannel.send({embeds: [{
+            title: `‼️ WARNING ‼️`,
+            color: 0xFF0000, 
+            description: `The user <@!${member.id}> has left this server. They have been removed from the database.`
+        }]});
     }
 });
 
@@ -858,7 +847,7 @@ async function updateLog(server, newchannel = "") {
     if (newchannel !== "") {
         c = await server.channels.cache.get(newchannel);
         var e = await getLogEmbed(server);
-        c.send(e).then((m) => {
+        c.send({embeds: [e]}).then((m) => {
             sql = `UPDATE servers SET logembed = ? WHERE serverid = ?;`
             db.run(sql, [m.id, server.id]);
         });
@@ -870,8 +859,16 @@ async function updateLog(server, newchannel = "") {
             c.messages.fetch(data.logembed)
                 .then((oldEmbed) => {
                     (async function() {
-                        embed = await getLogEmbed(server);
-                        oldEmbed.edit(embed)
+                        if (!oldEmbed) { // in case something breaks in sending the original embed somehow
+                            embed = await getLogEmbed(server);
+                            c.send({embeds: [embed]}).then((m) => {
+                                sql = `UPDATE servers SET logembed = ? WHERE serverid = ?;`
+                                db.run(sql, [m.id, server.id]);
+                            });
+                        } else {
+                            embed = await getLogEmbed(server);
+                            oldEmbed.edit({embeds: [embed]});
+                        }
                     })();
                 })
             .catch(console.error);
@@ -900,7 +897,7 @@ async function checkValidUser(userid, serverid, channel) {
                 sql = `SELECT userid FROM users WHERE serverid = ? AND status = 1`;
                 db.get(sql, [serverid]).then((users) => {
                     if (!users) {
-                        channel.send({embed:{ description: `No users are set. Set up users using \`!setUser [@user] [emoji]\`.` }});
+                        channel.send({embeds: [{ description: `No users are set. Set up users using \`!setUser [@user] [emoji]\`.` }]});
                     }
                 });
                 resolve(false);
@@ -930,10 +927,10 @@ async function getLogEmbed(server) {
                 }) 
             })
 
-            var returnEmbed = {embed:{}};
-            returnEmbed.embed.title = "Money log";
-            returnEmbed.embed.description = description;
-            returnEmbed.embed.color = 0x2471a3
+            var returnEmbed = {};
+            returnEmbed.title = "Money log";
+            returnEmbed.description = description;
+            returnEmbed.color = 0x2471a3
 
             // get all transactions and handle them
             sql =  `SELECT
@@ -964,7 +961,7 @@ async function getLogEmbed(server) {
                     }
                 })
 
-                returnEmbed.embed.fields = [];
+                returnEmbed.fields = [];
 
                 for (user in log) {
                     var newField = {
@@ -978,7 +975,7 @@ async function getLogEmbed(server) {
                     }
                     value = value.slice(0, -2) + `\n`;
                     newField.value = value;
-                    returnEmbed.embed.fields.push(newField);
+                    returnEmbed.fields.push(newField);
                 }
 
                 resolve(returnEmbed);

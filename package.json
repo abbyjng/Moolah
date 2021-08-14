@@ -5,7 +5,7 @@
   "main": "bot.js",
   "author": "Abigail Ng",
   "dependencies": {
-    "discord.js": "^12.5.3",
+    "discord.js": "^13.1.0",
     "pm2": "^5.1.0",
     "sqlite": "^4.0.23",
     "sqlite3": "^5.0.2"
