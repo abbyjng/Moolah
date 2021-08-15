@@ -1,37 +1,33 @@
-const https = require('https')
-const auth = require('./auth.json');
+const { REST } = require('@discordjs/rest');
+const { Routes } = require('discord-api-types/v9');
+const { token } = require('./auth.json');
+const fs = require('fs');
 
-const data = JSON.stringify(
-  {
-    "name": "cleartransactions",
-    "description": "Clear all transactions associated with this server."
-  }
-  
-)
+const commands = [];
+const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
 
-const options = {
-  hostname: 'discord.com',
-  port: 443,
-  path: '/api/v8/applications/839639502767259669/commands',
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'Content-Length': data.length,
-    'Authorization': "Bot " + auth.token
-  }
+// Place your client and guild ids here
+const clientId = '839639502767259669';
+const guildId = '839665867461361720';
+
+for (const file of commandFiles) {
+	const command = require(`./commands/${file}`);
+	commands.push(command.data.toJSON());
 }
 
-const req = https.request(options, res => {
-  console.log(`statusCode: ${res.statusCode}`)
+const rest = new REST({ version: '9' }).setToken(token);
 
-  res.on('data', d => {
-    process.stdout.write(d)
-  })
-})
+(async () => {
+	try {
+		console.log('Started refreshing application (/) commands.');
 
-req.on('error', error => {
-  console.error(error)
-})
+		await rest.put(
+			Routes.applicationGuildCommands(clientId, guildId),
+			{ body: commands },
+		);       
 
-req.write(data)
-req.end()
+		console.log('Successfully reloaded application (/) commands.');
+	} catch (error) {
+		console.error(error);
+	}
+})();
