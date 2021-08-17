@@ -1,448 +1,396 @@
-const { Client, Collection, Intents, Permissions } = require('discord.js');
-const auth = require('./auth.json');
-const fs = require('fs');
+const { Client, Collection, Intents, Permissions } = require("discord.js");
+const auth = require("./auth.json");
+const fs = require("fs");
 
-const { openDb } = require('./databaseHandler.js')
-
-const embedHandler = require('./embedHandler.js')
+const { openDb } = require("./databaseHandler.js");
+const { updateLog } = require("./../logHandler.js");
 
 let db;
 
 // Initialize Discord Bot
-const intents = [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MEMBERS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_MESSAGE_REACTIONS, Intents.FLAGS.GUILD_EMOJIS_AND_STICKERS];
-const partials = ['GUILD_MEMBER'];
-const client = new Client({intents: intents, partials: partials, disableEveryone: false});
+const intents = [
+  Intents.FLAGS.GUILDS,
+  Intents.FLAGS.GUILD_MEMBERS,
+  Intents.FLAGS.GUILD_MESSAGES,
+  Intents.FLAGS.GUILD_MESSAGE_REACTIONS,
+  Intents.FLAGS.GUILD_EMOJIS_AND_STICKERS,
+];
+const partials = ["GUILD_MEMBER"];
+const client = new Client({
+  intents: intents,
+  partials: partials,
+  disableEveryone: false,
+});
 client.commands = new Collection();
 
-const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
+const commandFiles = fs
+  .readdirSync("./commands")
+  .filter((file) => file.endsWith(".js"));
 
 for (const file of commandFiles) {
-	const command = require(`./commands/${file}`);
-	// set a new item in the Collection
-	// with the key as the command name and the value as the exported module
-	client.commands.set(command.data.name, command);
+  const command = require(`./commands/${file}`);
+  // set a new item in the Collection
+  // with the key as the command name and the value as the exported module
+  client.commands.set(command.data.name, command);
 }
 
 client.on("ready", async () => {
-    // open database
-    db = await openDb();
+  // open database
+  db = await openDb();
 
-    // create all the tables if they have not yet been created
-    const schema = fs.readFileSync('./database/schema.sql').toString();
-    const schemaArr = schema.toString().split(');');
+  // create all the tables if they have not yet been created
+  const schema = fs.readFileSync("./database/schema.sql").toString();
+  const schemaArr = schema.toString().split(");");
 
-    db.getDatabaseInstance().serialize(() => {
-        db.run('PRAGMA foreign_keys=OFF;');
-        schemaArr.forEach((query) => {
-            if (query) {
-                query += ');';
-                db.run(query)
-            }
-        });
+  db.getDatabaseInstance().serialize(() => {
+    db.run("PRAGMA foreign_keys=OFF;");
+    schemaArr.forEach((query) => {
+      if (query) {
+        query += ");";
+        db.run(query);
+      }
+    });
+  });
+
+  console.log(`Logged in as ${client.user.tag}!`);
+});
+
+client.on("interactionCreate", async (interaction) => {
+  if (!interaction.isCommand()) return;
+
+  const { commandName } = interaction;
+
+  if (!client.commands.has(commandName)) return;
+
+  try {
+    await client.commands.get(commandName).execute(interaction);
+  } catch (error) {
+    console.error(error);
+    await interaction.reply({
+      content:
+        "There was an error while executing this command. Please report a bug to the Discord or GitHub if you receive this message.",
+      ephemeral: true,
+    });
+  }
+});
+
+client.on("guildCreate", (server) => {
+  // add server to the database
+  sql = `INSERT INTO servers (serverid, transactionsid, logid, alertsid) 
+                        VALUES (?, "", "", "");`;
+  db.run(sql, [server.id.toString()]);
+
+  // send initial message
+  let defaultChannel = "";
+  server.channels.cache.forEach((channel) => {
+    if (channel.type == "GUILD_TEXT" && defaultChannel == "") {
+      if (
+        channel.permissionsFor(server.me).has(Permissions.FLAGS.SEND_MESSAGES)
+      ) {
+        defaultChannel = channel;
+      }
+    }
+  });
+  //defaultChannel will be the channel object that it first finds the bot has permissions for
+  defaultChannel.send({
+    embeds: [
+      {
+        title: `Hello! Thanks for adding me! I'm Moolah, a bot designed to help keep group finances simple. 🐮`,
+        thumbnail: {
+          url: "https://i.ibb.co/vZyf66y/Moolah-Logo.png",
+        },
+        color: 0x2471a3,
+        description:
+          "I use slash commands, so the prefix for all my commands is '/', e.g: '/help'.\nUse the command /help to see a list of all my commands.",
+        footer: { text: "Moolah created and developed by beexng#2380." },
+      },
+    ],
+  });
+});
+
+client.on("guildDelete", (server) => {
+  db.run(`DELETE FROM servers WHERE serverid = ?;`, [server.id]);
+});
+
+client.on("emojiDelete", async function (emoji) {
+  // see if emoji is connected to a user
+  sql = `SELECT userid FROM users WHERE emoji = ? AND serverid = ?`;
+  user = await db.get(sql, [`<:${emoji.name}:${emoji.id}>`, emoji.guild.id]);
+  if (user) {
+    // delete user from the table, add to deleted users
+    db.run(`UPDATE users SET status = 0 WHERE userid = ? AND serverid = ?;`, [
+      user.userid,
+      emoji.guild.id,
+    ]).then(() => {
+      // update log embed without the user
+      updateLog(emoji.guild);
     });
 
-    console.log(`Logged in as ${client.user.tag}!`);
-});
-
-client.on('interactionCreate', async interaction => {
-	if (!interaction.isCommand()) return;
-
-	const { commandName } = interaction;
-
-	if (!client.commands.has(commandName)) return;
-
-	try {
-		await client.commands.get(commandName).execute(interaction);
-	} catch (error) {
-		console.error(error);
-		await interaction.reply({ content: 'There was an error while executing this command. Please report a bug to the Discord or GitHub if you receive this message.', ephemeral: true });
-	}
-});
-
-client.on('guildCreate', server => {
-    // add server to the database
-    sql = `INSERT INTO servers (serverid, transactionsid, logid, alertsid) 
-                        VALUES (?, "", "", "");`
-    db.run(sql, [server.id.toString()]);
-
-    // send initial message
-    let defaultChannel = "";
-    server.channels.cache.forEach((channel) => {
-        if (channel.type == 'GUILD_TEXT' && defaultChannel == "") {
-            if (channel.permissionsFor(server.me).has(Permissions.FLAGS.SEND_MESSAGES)) {
-                defaultChannel = channel;
-            }
-        }
-    })
-    //defaultChannel will be the channel object that it first finds the bot has permissions for
-    defaultChannel.send({embeds: [embedHandler.welcome]});
-});
-
-client.on('guildDelete', server => {
-    db.run(`DELETE FROM servers WHERE serverid = ?;`, [server.id]);
-});
-
-client.on("emojiDelete", async function(emoji) {
-    // see if emoji is connected to a user
-    sql = `SELECT userid FROM users WHERE emoji = ? AND serverid = ?`
-    user = await db.get(sql, [`<:${emoji.name}:${emoji.id}>`, emoji.guild.id]);
-    if (user) {
-        // delete user from the table, add to deleted users
-        db.run(`UPDATE users SET status = 0 WHERE userid = ? AND serverid = ?;`, [user.userid, emoji.guild.id]).then(() => {
-            // update log embed without the user
-            updateLog(emoji.guild)
-        });
-
-        // send message warning user to re-add the user with a new emoji
-        sql = `SELECT alertsid FROM servers WHERE serverid = ?`;
-        s = db.run(sql, [emoji.guild.id])
-        defaultChannel = "";
-        if (s.alertsids) {
-            defaultChannel = emoji.guild.channels.cache.get(s.alertsid);
-        } else {
-            channel.guild.channels.cache.forEach((channel) => {
-                if (channel.type == 'GUILD_TEXT' && defaultChannel == "") {
-                    if (channel.permissionsFor(channel.guild.me).has(Permissions.FLAGS.SEND_MESSAGES)) {
-                        defaultChannel = channel;
-                    }
-                }
-            })
-        }
-        //defaultChannel will be the channel object that it first finds the bot has permissions for
-        defaultChannel.send({embeds: [{
-            title: `‼️ WARNING ‼️`,
-            color: 0xFF0000, 
-            description: `The emoji previously called :${emoji.name}: was deleted.
-            This emoji was connected to <@!${user.userid}>. Please assign a new emoji to <@!${user.userid}>. Until this is done, this user will be removed from the database.`
-        }]});
-    }
-});
-
-client.on("emojiUpdate", async function(oldEmoji, newEmoji) {
-    // see if emoji is connected to a user
-    sql = `SELECT userid FROM users WHERE emoji = ? AND serverid = ?`
-    user = await db.get(sql, [`<:${oldEmoji.name}:${oldEmoji.id}>`, oldEmoji.guild.id]);
-    if (user) {
-        // update emoji in sql
-        db.run(`UPDATE users SET emoji = ? WHERE userid = ? AND serverid = ?;`, [`<:${newEmoji.name}:${newEmoji.id}>`, user.userid, oldEmoji.guild.id]).then(() => {
-            // update log embed
-            updateLog(newEmoji.guild);
-        });
-    }
-});
-
-client.on("channelDelete", async function(channel) {
-    sql = `SELECT * FROM servers WHERE serverid = ? 
-            AND (transactionsid = ? 
-              OR logid = ?
-              OR alertsid = ?)`
-    s = await db.get(sql, [channel.guild.id, channel.id, channel.id, channel.id]);
-    let ch = "";
-    if (s) {
-        switch (channel.id) {
-            case s.transactionsid:
-                ch = "transactions";
-                db.run(`UPDATE servers SET transactionsid = "" WHERE serverid = ?;`, [s.serverid]);
-                break;
-            case s.logid:
-                ch = "log";
-                db.run(`UPDATE servers SET logid = "" WHERE serverid = ?;`, [s.serverid]);
-                break;
-            case s.alertsid:
-                ch = "alerts";
-                db.run(`UPDATE servers SET alertsid = "" WHERE serverid = ?;`, [s.serverid]);
-                break;
-        }
-
-        // send message warning that the channel has been unset
-        let defaultChannel = "";
-        if (s.alertsid && ch != "alerts") {
-            defaultChannel = channel.guild.channels.cache.get(s.alertsid);
-        } else {
-            channel.guild.channels.cache.forEach((channel) => {
-                if (channel.type == 'GUILD_TEXT' && defaultChannel == "") {
-                    if (channel.permissionsFor(channel.guild.me).has(Permissions.FLAGS.SEND_MESSAGES)) {
-                        defaultChannel = channel;
-                    }
-                }
-            })
-        }
-        
-        //defaultChannel will be the channel object that it first finds the bot has permissions for
-        defaultChannel.send({embeds: [{
-            title: `‼️ WARNING ‼️`,
-            color: 0xFF0000, 
-            description: `The channel previously set as the ${ch} channel has been deleted. This channel has been unset.`
-        }]});
-    }
-});
-
-client.on("channelUpdate", async function(oldChannel, newChannel) {
-    // see if channel is assigned
-    sql = `SELECT * FROM servers WHERE serverid = ? 
-            AND (transactionsid = ? 
-              OR logid = ?
-              OR alertsid = ?)`
-    s = await db.get(sql, [oldChannel.guild.id, oldChannel.id, oldChannel.id, oldChannel.id]);
-    if (s) {
-        if (setChannel.type !== 'GUILD_TEXT' || !setChannel.permissionsFor(server.me).has(Permissions.FLAGS.SEND_MESSAGES)) {
-            let ch = "";
-            switch (oldChannel.id) {
-                case s.transactionsid:
-                    ch = "transactions";
-                    db.run(`UPDATE servers SET transactionsid = "" WHERE serverid = ?;`, [s.serverid]);
-                    break;
-                case s.logid:
-                    ch = "log";
-                    db.run(`UPDATE servers SET logid = "" WHERE serverid = ?;`, [s.serverid]);
-                    break;
-                case s.alertsid:
-                    ch = "alerts";
-                    db.run(`UPDATE servers SET alertsid = "" WHERE serverid = ?;`, [s.serverid]);
-                    break;
-            }
-
-            // send message warning that the channel has been unset
-            if (s.alertsid && ch != "alerts") {
-                defaultChannel = oldChannel.guild.channels.cache.get(s.alertsid);;
-            } else {
-                channel.guild.channels.cache.forEach((channel) => {
-                    if (channel.type == 'GUILD_TEXT' && defaultChannel == "") {
-                        if (channel.permissionsFor(channel.guild.me).has(Permissions.FLAGS.SEND_MESSAGES)) {
-                            defaultChannel = channel;
-                        }
-                    }
-                })
-            }
-
-            //defaultChannel will be the channel object that it first finds the bot has permissions for
-            defaultChannel.send({embeds: [{
-                title: `‼️ WARNING ‼️`,
-                color: 0xFF0000, 
-                description: `The channel previously set as the ${ch} channel has been changed so that Moolah no longer can access it. This channel has been unset.`
-            }]});
-        }
-    }
-});
-
-client.on("messageDelete", async function(message) {
-    if (message.author.id === client.user.id) {
-        sql = `SELECT logembed, alertsid FROM servers WHERE serverid = ?`;
-        data = await db.get(sql, [message.guild.id]);
-        if (data.logembed === message.id) {
-            // AAAHH PANIC PANIC EVERYONE PANIC
-
-            // jk everything is okay
-
-            // send message warning that the channel has been unset
-            if (data.alertsid) {
-                defaultChannel = message.guild.channels.cache.get(data.alertsid);
-            } else {
-                channel.guild.channels.cache.forEach((channel) => {
-                    if (channel.type == 'GUILD_TEXT' && defaultChannel == "") {
-                        if (channel.permissionsFor(channel.guild.me).has(Permissions.FLAGS.SEND_MESSAGES)) {
-                            defaultChannel = channel;
-                        }
-                    }
-                })
-            }
-            //defaultChannel will be the channel object that it first finds the bot has permissions for
-            defaultChannel.send({embeds: [{
-                title: `⚠️ WARNING ⚠️`,
-                color: 0xFFFF00, 
-                description: `Did you mean to delete the log message? If you wish to unset the log channel, send \`/clearChannel log\`.`
-            }]});
-        }
-    }
-});
-
-client.on("guildMemberRemove", async function(member) {
-    sql = `SELECT userid FROM users WHERE userid = ? AND serverid = ? AND status = 1`
-    user = await db.get(sql, [member.id, member.guild.id]);
-    if (user) {
-        // delete user from the table, add to deleted users
-        db.run(`UPDATE users SET status = 0 WHERE userid = ? AND serverid = ?;`, [user.userid, member.guild.id]).then(() => {
-            // update log embed without the user
-            updateLog(member.guild)
-        });
-
-        // send message warning user to re-add the user with a new emoji
-        sql = `SELECT alertsid FROM servers WHERE serverid = ?`;
-        s = db.run(sql, [member.guild.id])
-        if (s.alertsid) {
-            defaultChannel = member.guild.channels.cache.get(s.alertsid);
-        } else {
-            channel.guild.channels.cache.forEach((channel) => {
-                if (channel.type == 'GUILD_TEXT' && defaultChannel == "") {
-                    if (channel.permissionsFor(channel.guild.me).has(Permissions.FLAGS.SEND_MESSAGES)) {
-                        defaultChannel = channel;
-                    }
-                }
-            })
-        }
-
-        //defaultChannel will be the channel object that it first finds the bot has permissions for
-        defaultChannel.send({embeds: [{
-            title: `‼️ WARNING ‼️`,
-            color: 0xFF0000, 
-            description: `The user <@!${member.id}> has left this server. They have been removed from the database.`
-        }]});
-    }
-});
-
-async function updateLog(server, newchannel = "") {
-    if (newchannel !== "") {
-        c = await server.channels.cache.get(newchannel);
-        var e = await getLogEmbed(server);
-        c.send({embeds: [e]}).then((m) => {
-            sql = `UPDATE servers SET logembed = ? WHERE serverid = ?;`
-            db.run(sql, [m.id, server.id]);
-        });
+    // send message warning user to re-add the user with a new emoji
+    sql = `SELECT alertsid FROM servers WHERE serverid = ?`;
+    s = db.run(sql, [emoji.guild.id]);
+    defaultChannel = "";
+    if (s.alertsids) {
+      defaultChannel = emoji.guild.channels.cache.get(s.alertsid);
     } else {
-        sql = `SELECT logid, logembed FROM servers WHERE serverid = ?`;
-        data = await db.get(sql, [server.id]);
-        if (data.logid != '') {
-            c = server.channels.cache.get(data.logid);
-            c.messages.fetch(data.logembed)
-                .then((oldEmbed) => {
-                    (async function() {
-                        if (!oldEmbed) { // in case something breaks in sending the original embed somehow
-                            embed = await getLogEmbed(server);
-                            c.send({embeds: [embed]}).then((m) => {
-                                sql = `UPDATE servers SET logembed = ? WHERE serverid = ?;`
-                                db.run(sql, [m.id, server.id]);
-                            });
-                        } else {
-                            embed = await getLogEmbed(server);
-                            oldEmbed.edit({embeds: [embed]});
-                        }
-                    })();
-                })
-            .catch(console.error);
+      channel.guild.channels.cache.forEach((channel) => {
+        if (channel.type == "GUILD_TEXT" && defaultChannel == "") {
+          if (
+            channel
+              .permissionsFor(channel.guild.me)
+              .has(Permissions.FLAGS.SEND_MESSAGES)
+          ) {
+            defaultChannel = channel;
+          }
         }
+      });
     }
-}
-
-function getFormattedUsers(users, userid = null) {
-    formUsers = ""
-    users.forEach(row => {
-        if (row.userid !== userid) {
-            formUsers += `${row.emoji} → `
-            formUsers += `<@!${row.userid}>\n`;
-        }
-    })
-    return formUsers;
-}
-
-async function checkValidUser(userid, serverid, channel) {
-    return new Promise((resolve, reject) => {
-        sql = `SELECT userid FROM users WHERE userid = ? AND serverid = ? AND status = 1`;
-        db.get(sql, [userid, serverid]).then((val) => {
-            if (val) {
-                resolve(true);
-            } else {
-                sql = `SELECT userid FROM users WHERE serverid = ? AND status = 1`;
-                db.get(sql, [serverid]).then((users) => {
-                    if (!users) {
-                        channel.send({embeds: [{ description: `No users are set. Set up users using \`/setUser [@user] [emoji]\`.` }]});
-                    }
-                });
-                resolve(false);
-            }
-        })
+    //defaultChannel will be the channel object that it first finds the bot has permissions for
+    defaultChannel.send({
+      embeds: [
+        {
+          title: `‼️ WARNING ‼️`,
+          color: 0xff0000,
+          description: `The emoji previously called :${emoji.name}: was deleted.
+            This emoji was connected to <@!${user.userid}>. Please assign a new emoji to <@!${user.userid}>. Until this is done, this user will be removed from the database.`,
+        },
+      ],
     });
-}
+  }
+});
 
-async function getLogEmbed(server) {
-    var serverid = server.id;
-    return new Promise((resolve, reject) => {
-        var log = {}
-        // populate the log dictionary with users
-        sql =  `SELECT userid, emoji FROM users WHERE serverid = ? AND status = 1`;
-        db.all(sql, [serverid]).then((users) => {
-            if (users.length <= 1) {
-                resolve(`No transactions available.`)
+client.on("emojiUpdate", async function (oldEmoji, newEmoji) {
+  // see if emoji is connected to a user
+  sql = `SELECT userid FROM users WHERE emoji = ? AND serverid = ?`;
+  user = await db.get(sql, [
+    `<:${oldEmoji.name}:${oldEmoji.id}>`,
+    oldEmoji.guild.id,
+  ]);
+  if (user) {
+    // update emoji in sql
+    db.run(`UPDATE users SET emoji = ? WHERE userid = ? AND serverid = ?;`, [
+      `<:${newEmoji.name}:${newEmoji.id}>`,
+      user.userid,
+      oldEmoji.guild.id,
+    ]).then(() => {
+      // update log embed
+      updateLog(newEmoji.guild);
+    });
+  }
+});
+
+client.on("channelDelete", async function (channel) {
+  sql = `SELECT * FROM servers WHERE serverid = ? 
+            AND (transactionsid = ? 
+              OR logid = ?
+              OR alertsid = ?)`;
+  s = await db.get(sql, [channel.guild.id, channel.id, channel.id, channel.id]);
+  let ch = "";
+  if (s) {
+    switch (channel.id) {
+      case s.transactionsid:
+        ch = "transactions";
+        db.run(`UPDATE servers SET transactionsid = "" WHERE serverid = ?;`, [
+          s.serverid,
+        ]);
+        break;
+      case s.logid:
+        ch = "log";
+        db.run(`UPDATE servers SET logid = "" WHERE serverid = ?;`, [
+          s.serverid,
+        ]);
+        break;
+      case s.alertsid:
+        ch = "alerts";
+        db.run(`UPDATE servers SET alertsid = "" WHERE serverid = ?;`, [
+          s.serverid,
+        ]);
+        break;
+    }
+
+    // send message warning that the channel has been unset
+    let defaultChannel = "";
+    if (s.alertsid && ch != "alerts") {
+      defaultChannel = channel.guild.channels.cache.get(s.alertsid);
+    } else {
+      channel.guild.channels.cache.forEach((channel) => {
+        if (channel.type == "GUILD_TEXT" && defaultChannel == "") {
+          if (
+            channel
+              .permissionsFor(channel.guild.me)
+              .has(Permissions.FLAGS.SEND_MESSAGES)
+          ) {
+            defaultChannel = channel;
+          }
+        }
+      });
+    }
+
+    //defaultChannel will be the channel object that it first finds the bot has permissions for
+    defaultChannel.send({
+      embeds: [
+        {
+          title: `‼️ WARNING ‼️`,
+          color: 0xff0000,
+          description: `The channel previously set as the ${ch} channel has been deleted. This channel has been unset.`,
+        },
+      ],
+    });
+  }
+});
+
+client.on("channelUpdate", async function (oldChannel, newChannel) {
+  // see if channel is assigned
+  sql = `SELECT * FROM servers WHERE serverid = ? 
+            AND (transactionsid = ? 
+              OR logid = ?
+              OR alertsid = ?)`;
+  s = await db.get(sql, [
+    oldChannel.guild.id,
+    oldChannel.id,
+    oldChannel.id,
+    oldChannel.id,
+  ]);
+  if (s) {
+    if (
+      setChannel.type !== "GUILD_TEXT" ||
+      !setChannel.permissionsFor(server.me).has(Permissions.FLAGS.SEND_MESSAGES)
+    ) {
+      let ch = "";
+      switch (oldChannel.id) {
+        case s.transactionsid:
+          ch = "transactions";
+          db.run(`UPDATE servers SET transactionsid = "" WHERE serverid = ?;`, [
+            s.serverid,
+          ]);
+          break;
+        case s.logid:
+          ch = "log";
+          db.run(`UPDATE servers SET logid = "" WHERE serverid = ?;`, [
+            s.serverid,
+          ]);
+          break;
+        case s.alertsid:
+          ch = "alerts";
+          db.run(`UPDATE servers SET alertsid = "" WHERE serverid = ?;`, [
+            s.serverid,
+          ]);
+          break;
+      }
+
+      // send message warning that the channel has been unset
+      if (s.alertsid && ch != "alerts") {
+        defaultChannel = oldChannel.guild.channels.cache.get(s.alertsid);
+      } else {
+        channel.guild.channels.cache.forEach((channel) => {
+          if (channel.type == "GUILD_TEXT" && defaultChannel == "") {
+            if (
+              channel
+                .permissionsFor(channel.guild.me)
+                .has(Permissions.FLAGS.SEND_MESSAGES)
+            ) {
+              defaultChannel = channel;
             }
-            var description = ``
-            users.forEach((user) => {
-                description += `<@!${user.userid}>: ${user.emoji}\n`;
-                log[user.userid] = {}
-                users.forEach((otherUser) => {
-                    if (otherUser.userid != user.userid) {
-                        log[user.userid][otherUser.userid] = {value: 0, emoji: otherUser.emoji}
-                    }
-                }) 
-            })
+          }
+        });
+      }
 
-            var returnEmbed = {};
-            returnEmbed.title = "Money log";
-            returnEmbed.description = description;
-            returnEmbed.color = 0x2471a3
+      //defaultChannel will be the channel object that it first finds the bot has permissions for
+      defaultChannel.send({
+        embeds: [
+          {
+            title: `‼️ WARNING ‼️`,
+            color: 0xff0000,
+            description: `The channel previously set as the ${ch} channel has been changed so that Moolah no longer can access it. This channel has been unset.`,
+          },
+        ],
+      });
+    }
+  }
+});
 
-            // get all transactions and handle them
-            sql =  `SELECT
-                        owner,
-                        recipient,
-                        value
-                    FROM
-                        transactions as t 
-                        INNER JOIN 
-                        transactionhands as th
-                        ON t.transactionid = th.transactionid
-                    WHERE
-                        th.owner != th.recipient
-                        AND t.serverid = ?`;
-            db.all(sql, [serverid]).then((transactions) => {
-                transactions.forEach((t) => {
-                    if (t.recipient in log) {
-                        if (t.owner in log[t.recipient]) {
-                            if (log[t.owner][t.recipient].value > t.value) {
-                                log[t.owner][t.recipient].value -= t.value;
-                            } else if (log[t.owner][t.recipient].value > 0) {
-                                log[t.recipient][t.owner].value = t.value - log[t.owner][t.recipient].value;
-                                log[t.owner][t.recipient].value = 0;
-                            } else {
-                                log[t.recipient][t.owner].value += t.value;
-                            }
-                        }
-                    }
-                })
+client.on("messageDelete", async function (message) {
+  if (message.author.id === client.user.id) {
+    sql = `SELECT logembed, alertsid FROM servers WHERE serverid = ?`;
+    data = await db.get(sql, [message.guild.id]);
+    if (data.logembed === message.id) {
+      // AAAHH PANIC PANIC EVERYONE PANIC
 
-                returnEmbed.fields = [];
+      // jk everything is okay
 
-                for (user in log) {
-                    var newField = {
-                        name: `-----`,
-                        value: ``
-                    };
-                    var value = `<@!${user}> owes:\n`;
+      // send message warning that the channel has been unset
+      if (data.alertsid) {
+        defaultChannel = message.guild.channels.cache.get(data.alertsid);
+      } else {
+        channel.guild.channels.cache.forEach((channel) => {
+          if (channel.type == "GUILD_TEXT" && defaultChannel == "") {
+            if (
+              channel
+                .permissionsFor(channel.guild.me)
+                .has(Permissions.FLAGS.SEND_MESSAGES)
+            ) {
+              defaultChannel = channel;
+            }
+          }
+        });
+      }
+      //defaultChannel will be the channel object that it first finds the bot has permissions for
+      defaultChannel.send({
+        embeds: [
+          {
+            title: `⚠️ WARNING ⚠️`,
+            color: 0xffff00,
+            description: `Did you mean to delete the log message? If you wish to unset the log channel, send \`/clearChannel log\`.`,
+          },
+        ],
+      });
+    }
+  }
+});
 
-                    for (key in log[user]) {
-                        value += `$${log[user][key].value.toFixed(2)} to ${log[user][key].emoji} | `
-                    }
-                    value = value.slice(0, -2) + `\n`;
-                    newField.value = value;
-                    returnEmbed.fields.push(newField);
-                }
+client.on("guildMemberRemove", async function (member) {
+  sql = `SELECT userid FROM users WHERE userid = ? AND serverid = ? AND status = 1`;
+  user = await db.get(sql, [member.id, member.guild.id]);
+  if (user) {
+    // delete user from the table, add to deleted users
+    db.run(`UPDATE users SET status = 0 WHERE userid = ? AND serverid = ?;`, [
+      user.userid,
+      member.guild.id,
+    ]).then(() => {
+      // update log embed without the user
+      updateLog(member.guild);
+    });
 
-                resolve(returnEmbed);
-            })
-        })
-    })
-}
+    // send message warning user to re-add the user with a new emoji
+    sql = `SELECT alertsid FROM servers WHERE serverid = ?`;
+    s = db.run(sql, [member.guild.id]);
+    if (s.alertsid) {
+      defaultChannel = member.guild.channels.cache.get(s.alertsid);
+    } else {
+      channel.guild.channels.cache.forEach((channel) => {
+        if (channel.type == "GUILD_TEXT" && defaultChannel == "") {
+          if (
+            channel
+              .permissionsFor(channel.guild.me)
+              .has(Permissions.FLAGS.SEND_MESSAGES)
+          ) {
+            defaultChannel = channel;
+          }
+        }
+      });
+    }
 
-function getUserFromMention(mention) {
-	if (!mention) return;
-
-	if (mention.startsWith('<@') && mention.endsWith('>')) {
-		mention = mention.slice(2, -1);
-
-		if (mention.startsWith('!')) {
-			mention = mention.slice(1);
-		}
-
-		return client.users.cache.get(mention);
-	}
-}
+    //defaultChannel will be the channel object that it first finds the bot has permissions for
+    defaultChannel.send({
+      embeds: [
+        {
+          title: `‼️ WARNING ‼️`,
+          color: 0xff0000,
+          description: `The user <@!${member.id}> has left this server. They have been removed from the database.`,
+        },
+      ],
+    });
+  }
+});
 
 client.login(auth.token);
