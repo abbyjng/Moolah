@@ -30,11 +30,11 @@ module.exports = {
               value: `Displays a list of all previously logged transactions and payments. 10 transactions max will be shown on the list at a time; the user may scroll up and down the list using the arrow reactions on the message. The numbering on this list is used with the \`/delete\` command.\n----------`,
             },
             {
-              name: `/delete [number of transaction to delete]`,
+              name: `/delete {last | number [number of transaction to delete]}`,
               value: `Removes the transaction or payment associated with the first input. This number can be found by using \`/history\`. This will permanently remove the transaction. A confirmation message will send before this action can be completed.\n----------`,
             },
             {
-              name: `/clearTransactions`,
+              name: `/cleartransactions`,
               value: `Deletes all transactions in the server. A confirmation message will send before this action can be completed.`,
             },
           ],

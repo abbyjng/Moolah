@@ -3,7 +3,7 @@ const auth = require("./auth.json");
 const fs = require("fs");
 
 const { openDb } = require("./databaseHandler.js");
-const { updateLog } = require("./../logHandler.js");
+const { updateLog } = require("./logHandler.js");
 
 let db;
 

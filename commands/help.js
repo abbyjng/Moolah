@@ -1,18 +1,18 @@
 const { SlashCommandBuilder } = require("@discordjs/builders");
 
-let desc = `- Inputs within {} are literals - type the option which fits your need exactly.
+let desc = `- All of these commands are slash commands; utilize the autofill and input regulation to avoid misinputs.
+- Inputs within {} are literals - type the option which fits your need exactly.
 - Inputs within [] are variables describing what you need to submit.
 - Inputs which are italicized are optional.
-- All commands are **not** case sensitive.
 - **The bracket characters are not included in any command.**`;
 
 let setupCmds = `/help
-/setUser [@user] [emoji]
-/removeUser [@user]
-/userList
-/setChannel {transactions | log | alerts} [#channel]
-/clearChannel {transactions | log | alerts}
-/channelList
+/setuser [@user] [emoji]
+/removeuser [@user]
+/userlist
+/setchannel {transactions | log | alerts} [#channel]
+/clearchannel {transactions | log | alerts}
+/channellist
 
 For more information on these commands, use \`/setupHelp\`.`;
 
@@ -21,7 +21,7 @@ let moneyCmds = `/bought [money value to 2 decimals] *[description]*
 /log
 /history
 /delete {last | [number of transaction to delete]}
-/clearTransactions
+/cleartransactions
 
 For more information on these commands, use \`/moneyHelp\`.`;
 

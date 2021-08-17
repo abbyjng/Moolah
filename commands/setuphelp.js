@@ -18,35 +18,35 @@ module.exports = {
               value: `Displays a full list of Moolah's commands.\n----------`,
             },
             {
-              name: `/moneyHelp`,
+              name: `/moneyhelp`,
               value: `Displays all of Moolah's money commands with detailed descriptions of what they do and how to use them.\n----------`,
             },
             {
-              name: `/setupHelp`,
+              name: `/setuphelp`,
               value: `Displays all of Moolah's setup commands with detailed descriptions of what they do and how to use them.\n----------`,
             },
             {
-              name: `/setUser [@user] [emoji]`,
+              name: `/setuser [@user] [emoji]`,
               value: `Registers a user with the bot and assigns them to an emoji. This emoji may be custom, but must be from within the local server. The emoji must be unique to this user. The first input should mention the user using the @ functionality. If the given user has already been set, their emoji will be updated to the emoji provided.\n----------`,
             },
             {
-              name: `/removeUser [@user]`,
+              name: `/removeuser [@user]`,
               value: `Removes a user from active status within the bot. This will still prevent other users from adding new transactions involving this user, but will leave the user's older transactions within the history log. The input should mention the user using the @ functionality.\n----------`,
             },
             {
-              name: `/userList`,
+              name: `/userlist`,
               value: `Displays a list of all active users.\n----------`,
             },
             {
-              name: `/setChannel {transactions | log | alerts} [#channel]`,
+              name: `/setchannel {transactions | log | alerts} [#channel]`,
               value: `Assigns a channel to be dedicated to a topic. The second input should link a channel using the # functionality. \n**Transactions channel:** All commands listed under \`/moneyHelp\` can only be used in this channel. \n**Log channel:** A log embed will be sent to this channel. This embed will update with every new transaction or update to users. It is recommended that this channel be set to read-only so that the log may always be easily accessible. \n**Alerts channel:** All warnings about missing users or channels will be sent to this channel. By default, they will be sent instead to the first channel accessible to the bot.\n----------`,
             },
             {
-              name: `/clearChannel {transactions | log | alerts}`,
+              name: `/clearchannel {transactions | log | alerts}`,
               value: `Clears the assignment of this channel type. If a channel was previously set to this topic, it will be removed. Removal of a log channel will not remove the log embed, but it will cause the message to no longer update.\n----------`,
             },
             {
-              name: `/channelList`,
+              name: `/channellist`,
               value: `Displays a list of the channel topic assignments.`,
             },
           ],
