@@ -3,48 +3,51 @@ const { openDb } = require('./databaseHandler.js')
 let db;
 
 module.exports = { 
-    updateLog: async (server, newchannel = "") => {
-        db = await openDb();
-        if (newchannel !== "") {
-            c = await server.channels.cache.get(newchannel);
-            var e = await getLogEmbed(server);
-            c.send({embeds: [e]}).then((m) => {
-                sql = `UPDATE servers SET logembed = ? WHERE serverid = ?;`
-                db.run(sql, [m.id, server.id]);
-            });
-        } else {
-            sql = `SELECT logid, logembed FROM servers WHERE serverid = ?`;
-            data = await db.get(sql, [server.id]);
-            if (data.logid != '') {
-                c = server.channels.cache.get(data.logid);
-                c.messages.fetch(data.logembed)
-                    .then((oldEmbed) => {
-                        (async function() {
-                            if (!oldEmbed) { // in case something breaks in sending the original embed somehow
-                                embed = await getLogEmbed(server);
-                                c.send({embeds: [embed]}).then((m) => {
-                                    sql = `UPDATE servers SET logembed = ? WHERE serverid = ?;`
-                                    db.run(sql, [m.id, server.id]);
-                                });
-                            } else {
-                                embed = await getLogEmbed(server);
-                                oldEmbed.edit({embeds: [embed]});
-                            }
-                        })();
-                    })
-                .catch(console.error);
-            }
+    updateLog,
+    getLogEmbed
+}
+
+async function updateLog(server, newchannel = "") {
+    db = await openDb();
+    if (newchannel !== "") {
+        c = await server.channels.cache.get(newchannel);
+        var e = await getLogEmbed(server);
+        c.send({embeds: [e]}).then((m) => {
+            sql = `UPDATE servers SET logembed = ? WHERE serverid = ?;`
+            db.run(sql, [m.id, server.id]);
+        });
+    } else {
+        sql = `SELECT logid, logembed FROM servers WHERE serverid = ?`;
+        data = await db.get(sql, [server.id]);
+        if (data.logid != '') {
+            c = server.channels.cache.get(data.logid);
+            c.messages.fetch(data.logembed)
+                .then((oldEmbed) => {
+                    (async function() {
+                        if (!oldEmbed) { // in case something breaks in sending the original embed somehow
+                            embed = await getLogEmbed(server);
+                            c.send({embeds: [embed]}).then((m) => {
+                                sql = `UPDATE servers SET logembed = ? WHERE serverid = ?;`
+                                db.run(sql, [m.id, server.id]);
+                            });
+                        } else {
+                            embed = await getLogEmbed(server);
+                            oldEmbed.edit({embeds: [embed]});
+                        }
+                    })();
+                })
+            .catch(console.error);
         }
     }
 }
 
 async function getLogEmbed(server) {
-    var serverid = server.id;
+    db = await openDb();
     return new Promise((resolve, reject) => {
         var log = {}
         // populate the log dictionary with users
         sql =  `SELECT userid, emoji FROM users WHERE serverid = ? AND status = 1`;
-        db.all(sql, [serverid]).then((users) => {
+        db.all(sql, [server.id]).then((users) => {
             if (users.length <= 1) {
                 resolve(`No transactions available.`)
             }
@@ -77,7 +80,7 @@ async function getLogEmbed(server) {
                     WHERE
                         th.owner != th.recipient
                         AND t.serverid = ?`;
-            db.all(sql, [serverid]).then((transactions) => {
+            db.all(sql, [server.id]).then((transactions) => {
                 transactions.forEach((t) => {
                     if (t.recipient in log) {
                         if (t.owner in log[t.recipient]) {

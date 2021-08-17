@@ -6,24 +6,24 @@ let desc = `- Inputs within {} are literals - type the option which fits your ne
 - All commands are **not** case sensitive.
 - **The bracket characters are not included in any command.**`;
 
-let setupCmds = `!help
-!setUser [@user] [emoji]
-!removeUser [@user]
-!userList
-!setChannel {transactions | log | alerts} [#channel]
-!clearChannel {transactions | log | alerts}
-!channelList
+let setupCmds = `/help
+/setUser [@user] [emoji]
+/removeUser [@user]
+/userList
+/setChannel {transactions | log | alerts} [#channel]
+/clearChannel {transactions | log | alerts}
+/channelList
 
-For more information on these commands, use \`!setupHelp\`.`;
+For more information on these commands, use \`/setupHelp\`.`;
 
-let moneyCmds = `!bought [money value to 2 decimals] *[description]*
-!paid [money value to 2 decimals] *[emoji of person being paid]*
-!owe
-!history
-!delete [number of transaction to delete]
-!clearTransactions
+let moneyCmds = `/bought [money value to 2 decimals] *[description]*
+/paid [money value to 2 decimals] *[emoji of person being paid]*
+/log
+/history
+/delete {last | [number of transaction to delete]}
+/clearTransactions
 
-For more information on these commands, use \`!moneyHelp\`.`;
+For more information on these commands, use \`/moneyHelp\`.`;
 
 module.exports = {
 	data: new SlashCommandBuilder()
