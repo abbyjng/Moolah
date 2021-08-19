@@ -10,7 +10,6 @@ const commandFiles = fs
 
 // Place your client and guild ids here
 const clientId = "839639502767259669";
-const guildId = "839665867461361720";
 
 for (const file of commandFiles) {
   const command = require(`./commands/${file}`);
@@ -21,13 +20,13 @@ const rest = new REST({ version: "9" }).setToken(token);
 
 (async () => {
   try {
-    console.log("Started refreshing application (/) commands.");
+    console.log("Started refreshing global application (/) commands.");
 
     await rest.put(Routes.applicationCommands(clientId), {
       body: commands,
     });
 
-    console.log("Successfully reloaded application (/) commands.");
+    console.log("Successfully reloaded global application (/) commands.");
   } catch (error) {
     console.error(error);
   }

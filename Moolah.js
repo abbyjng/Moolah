@@ -315,18 +315,15 @@ client.on("channelUpdate", async function (oldChannel, newChannel) {
 
 client.on("messageDelete", async function (message) {
   if (message.author.id === client.user.id) {
-    sql = `SELECT logembed, alertsid FROM servers WHERE serverid = ?`;
+    sql = `SELECT logembed, logid, alertsid FROM servers WHERE serverid = ?`;
     data = await db.get(sql, [message.guild.id]);
     if (data.logembed === message.id) {
-      // AAAHH PANIC PANIC EVERYONE PANIC
-
-      // jk everything is okay
-
       // send message warning that the channel has been unset
+      let defaultChannel = "";
       if (data.alertsid) {
         defaultChannel = message.guild.channels.cache.get(data.alertsid);
       } else {
-        channel.guild.channels.cache.forEach((channel) => {
+        message.guild.channels.cache.forEach((channel) => {
           if (channel.type == "GUILD_TEXT" && defaultChannel == "") {
             if (
               channel
@@ -339,15 +336,18 @@ client.on("messageDelete", async function (message) {
         });
       }
       //defaultChannel will be the channel object that it first finds the bot has permissions for
-      defaultChannel.send({
-        embeds: [
-          {
-            title: `⚠️ WARNING ⚠️`,
-            color: 0xffff00,
-            description: `Did you mean to delete the log message? If you wish to unset the log channel, send \`/clearChannel log\`.`,
-          },
-        ],
-      });
+      if (defaultChannel) {
+        defaultChannel.send({
+          embeds: [
+            {
+              title: `⚠️ WARNING ⚠️`,
+              color: 0xffff00,
+              description: `Did you mean to delete the log message? If you wish to unset the log channel, send \`/clearchannel log\`.`,
+            },
+          ],
+        });
+      }
+      updateLog(message.guild, data.logid);
     }
   }
 });
@@ -368,7 +368,7 @@ client.on("guildMemberRemove", async function (member) {
     // send message warning user to re-add the user with a new emoji
     sql = `SELECT alertsid FROM servers WHERE serverid = ?`;
     s = db.run(sql, [member.guild.id]);
-    let defaultChannel;
+    let defaultChannel = "";
     if (s.alertsid) {
       defaultChannel = member.guild.channels.cache.get(s.alertsid);
     } else {
