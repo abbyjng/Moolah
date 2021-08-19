@@ -28,9 +28,7 @@ module.exports = {
     const setChannel = interaction.options.getChannel("channel");
     if (
       setChannel.type == "GUILD_TEXT" &&
-      setChannel
-        .permissionsFor(interaction.guild.me)
-        .has(Permissions.FLAGS.SEND_MESSAGES)
+      setChannel.permissionsFor(setChannel.guild.me).has(Permissions.FLAGS.SEND_MESSAGES) && setChannel.permissionsFor(setChannel.guild.me).has(Permissions.FLAGS.VIEW_CHANNEL)
     ) {
       switch (channelType) {
         case "transactions":
