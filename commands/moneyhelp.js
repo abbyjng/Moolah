@@ -22,6 +22,10 @@ module.exports = {
               value: `Logs a payment of the value given in the first input. User may tag the other person in their command to expediate the process. Otherwise, Moolah will follow up this command with an embed listing all the information from the command and emoji reactions to allow the user to pick which user their payment was to.\n----------`,
             },
             {
+              name: `/owe [money value] *[@user owed to]*`,
+              value: `Logs that the user owes the value given in the first input. User may tag the other person in their command to expediate the process. Otherwise, Moolah will follow up this command with an embed listing all the information from the command and emoji reactions to allow the user to pick which user their debt was to.\n----------`,
+            },
+            {
               name: `/log`,
               value: `Displays the current log of balances between all registered users. This is the same log which displays in a registered log channel.\n----------`,
             },

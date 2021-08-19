@@ -209,7 +209,26 @@ function getLogMessage(transactions, startIndex) {
     i < Math.min(startIndex + 10, transactions.length);
     ++i
   ) {
-    if (transactions[i].description !== "defaultPaidDescription") {
+    if (transactions[i].description == "defaultPaidDescription") {
+      // paid
+      retStr += `${i + 1}) <@!${transactions[i].owner}> paid ${
+        transactions[i].emojis[0]
+      } `;
+      retStr += `[$${transactions[i].value.toFixed(2)}] | ${getFormattedDate(
+        transactions[i].created
+      )}\n`;
+    } else if (transactions[i].value < 0) {
+      // owe
+      retStr += `${i + 1}) <@!${transactions[i].owner}> owes ${
+        transactions[i].emojis[0]
+      } `;
+      retStr += `[$${(-transactions[i].value).toFixed(2)}] `;
+      if (transactions[i].description) {
+        retStr += `"${transactions[i].description}" `;
+      }
+      retStr += `| ${getFormattedDate(transactions[i].created)}\n`;
+    } else {
+      // bought
       retStr += `${i + 1}) <@!${transactions[i].owner}> → `;
       transactions[i].emojis.forEach((emoji) => {
         retStr += emoji;
@@ -223,13 +242,6 @@ function getLogMessage(transactions, startIndex) {
         retStr += `"${transactions[i].description}" `;
       }
       retStr += `| ${getFormattedDate(transactions[i].created)}\n`;
-    } else {
-      retStr += `${i + 1}) <@!${transactions[i].owner}> paid ${
-        transactions[i].emojis[0]
-      } `;
-      retStr += `[$${transactions[i].value.toFixed(2)}] | ${getFormattedDate(
-        transactions[i].created
-      )}\n`;
     }
   }
 

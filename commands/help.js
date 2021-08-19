@@ -18,6 +18,7 @@ For more information on these commands, use \`/setupHelp\`.`;
 
 let moneyCmds = `/bought [money value] *[description]*
 /paid [money value] *[@user being paid]*
+/owe [money value] *[@user owed to]* *[description]*
 /log
 /history
 /delete {last | [number of transaction to delete]}
