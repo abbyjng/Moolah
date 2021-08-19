@@ -66,8 +66,8 @@ module.exports = {
             ],
           });
         }
-      } else if (!regex.exec(emojiStr)) {
-        // emoji is a regex
+      } else if (!isValidEmoji(emojiStr)) {
+        // emoji is not a regex
         interaction.reply({
           embeds: [
             {
@@ -111,3 +111,17 @@ module.exports = {
     }
   },
 };
+
+function isValidEmoji(emojiStr) {
+  let match;
+  let emojisFound = 0;
+  let fullEmoji = "";
+  while ((match = regex.exec(emojiStr))) {
+    emojisFound++;
+    fullEmoji += match[0];
+  }
+  if (fullEmoji != emojiStr) {
+    return false;
+  }
+  return emojisFound == 1;
+}
