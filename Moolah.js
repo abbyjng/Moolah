@@ -257,8 +257,8 @@ client.on("channelUpdate", async function (oldChannel, newChannel) {
   ]);
   if (s) {
     if (
-      setChannel.type !== "GUILD_TEXT" ||
-      !setChannel.permissionsFor(server.me).has(Permissions.FLAGS.SEND_MESSAGES)
+      newChannel.type !== "GUILD_TEXT" ||
+      !newChannel.permissionsFor(server.me).has(Permissions.FLAGS.SEND_MESSAGES)
     ) {
       let ch = "";
       switch (oldChannel.id) {
