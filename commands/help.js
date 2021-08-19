@@ -16,8 +16,8 @@ let setupCmds = `/help
 
 For more information on these commands, use \`/setupHelp\`.`;
 
-let moneyCmds = `/bought [money value to 2 decimals] *[description]*
-/paid [money value to 2 decimals] *[emoji of person being paid]*
+let moneyCmds = `/bought [money value] *[description]*
+/paid [money value] *[@user being paid]*
 /log
 /history
 /delete {last | [number of transaction to delete]}

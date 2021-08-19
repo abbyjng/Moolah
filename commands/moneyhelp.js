@@ -14,12 +14,12 @@ module.exports = {
           color: 0x2471a3,
           fields: [
             {
-              name: `/bought [money value to 2 decimals] *[description]*`,
+              name: `/bought [money value] *[description]*`,
               value: `Logs a transaction with the value given in the first input. Moolah will follow up this command with an embed listing all the information from the command and emoji reactions to allow the user to pick which users their purchase was for. The optional description appears only in the \`/history\` command as a log of what the purchase was for.\n----------`,
             },
             {
-              name: `/paid [money value to 2 decimals] *[emoji of person being paid]*`,
-              value: `Logs a payment of the value given in the first input. If the user knows which emoji is associated with the recipient, they may include it in their command to expediate the process. Otherwise, Moolah will follow up this command with an embed listing all the information from the command and emoji reactions to allow the user to pick which user their payment was to.\n----------`,
+              name: `/paid [money value] *[@user being paid]*`,
+              value: `Logs a payment of the value given in the first input. User may tag the other person in their command to expediate the process. Otherwise, Moolah will follow up this command with an embed listing all the information from the command and emoji reactions to allow the user to pick which user their payment was to.\n----------`,
             },
             {
               name: `/log`,

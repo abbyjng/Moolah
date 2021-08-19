@@ -26,10 +26,10 @@ module.exports = {
         .setDescription("The total value being paid")
         .setRequired(true)
     )
-    .addStringOption((option) =>
+    .addUserOption((option) =>
       option
-        .setName("emoji")
-        .setDescription("The emoji of the person being paid")
+        .setName("user")
+        .setDescription("The person being paid")
         .setRequired(false)
     ),
   async execute(interaction) {
@@ -37,7 +37,7 @@ module.exports = {
 
     let db = await openDb();
     const cost = interaction.options.getInteger("cost");
-    const emoji = interaction.options.getString("emoji");
+    const user = interaction.options.getUser("user");
     let validUser = await checkValidUser(interaction);
     if (validUser) {
       let validChannel = await checkTransactionsChannel(
@@ -53,7 +53,7 @@ module.exports = {
               },
             ],
           });
-        } else if (!emoji) {
+        } else if (!user) {
           // do embed
           sql = `SELECT userid, emoji FROM users WHERE serverid = ? AND status = 1`;
           users = await db.all(sql, [interaction.guildId]);
@@ -86,27 +86,27 @@ module.exports = {
             });
           })();
         } else {
-          // try emoji
-          sql = `SELECT userid FROM users WHERE emoji = ? AND serverid = ? AND status = 1`;
-          result = await db.get(sql, [emoji, interaction.guildId]);
+          // try tagged user
+          sql = `SELECT emoji FROM users WHERE userid = ? AND serverid = ? AND status = 1`;
+          result = await db.get(sql, [user.id, interaction.guildId]);
           if (!result) {
             interaction.editReply({
               embeds: [
                 {
-                  description: `User not found: ${emoji} is not associated with any user in this server.`,
+                  description: `<@!${user.id}> is not a registered user. Use /setuser to register a new user.`,
                 },
               ],
             });
-          } else if (result.userid === interaction.user.id) {
+          } else if (user.id === interaction.user.id) {
             interaction.editReply({
               embeds: [
                 {
-                  description: `Why are you trying to pay yourself? That's not allowed`,
+                  description: `Invalid action: you cannot log a payment to yourself.`,
                 },
               ],
             });
           } else {
-            let userid = result.userid;
+            let userid = user.id;
             // insert into transactions
             sql = `INSERT INTO transactions (serverid, value, description)
                                 VALUES (?, ?, "defaultPaidDescription")`;
@@ -128,7 +128,7 @@ module.exports = {
               interaction,
               interaction.user.id,
               userid,
-              emoji,
+              result.emoji,
               cost
             );
           }
@@ -164,14 +164,12 @@ async function handlePayment(interaction, authorid, users, strUsers, value) {
       status: StatusEnum.WORKING,
     };
 
-    embed = new Discord.MessageEmbed()
-      .setTitle(`New payment...`)
-      .addFields({
-        name: `Select the recipient of this payment of $${parseFloat(
-          value
-        ).toFixed(2)}:`,
-        value: strUsers,
-      });
+    embed = new Discord.MessageEmbed().setTitle(`New payment...`).addFields({
+      name: `Select the recipient of this payment of $${parseFloat(
+        value
+      ).toFixed(2)}:`,
+      value: strUsers,
+    });
     interaction.editReply({ embeds: [embed] }).then((m) => {
       t[(m.createdAt, authorid)] = info;
 
