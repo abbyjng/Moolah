@@ -74,11 +74,15 @@ client.on("interactionCreate", async (interaction) => {
   }
 });
 
-client.on("guildCreate", (server) => {
-  // add server to the database
-  sql = `INSERT INTO servers (serverid, transactionsid, logid, alertsid) 
+client.on("guildCreate", async function (server) {
+  sql = `SELECT serverid FROM servers WHERE serverid = ?`;
+  existingServer = await db.get(sql, [server.id]);
+  if (!existingServer) {
+    // add server to the database
+    sql = `INSERT INTO servers (serverid, transactionsid, logid, alertsid) 
                         VALUES (?, "", "", "");`;
-  db.run(sql, [server.id.toString()]);
+    db.run(sql, [server.id.toString()]);
+  }
 
   // send initial message
   let defaultChannel = "";
@@ -109,7 +113,7 @@ client.on("guildCreate", (server) => {
 });
 
 client.on("guildDelete", (server) => {
-  db.run(`DELETE FROM servers WHERE serverid = ?;`, [server.id]);
+  //   db.run(`DELETE FROM servers WHERE serverid = ?;`, [server.id]);
 });
 
 client.on("emojiDelete", async function (emoji) {
@@ -364,10 +368,11 @@ client.on("guildMemberRemove", async function (member) {
     // send message warning user to re-add the user with a new emoji
     sql = `SELECT alertsid FROM servers WHERE serverid = ?`;
     s = db.run(sql, [member.guild.id]);
+    let defaultChannel;
     if (s.alertsid) {
       defaultChannel = member.guild.channels.cache.get(s.alertsid);
     } else {
-      channel.guild.channels.cache.forEach((channel) => {
+      member.guild.channels.cache.forEach((channel) => {
         if (channel.type == "GUILD_TEXT" && defaultChannel == "") {
           if (
             channel
