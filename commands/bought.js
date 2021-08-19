@@ -39,19 +39,8 @@ module.exports = {
     const cost = interaction.options.getInteger("cost");
     const description = interaction.options.getString("description");
     sql = `SELECT userid FROM users WHERE userid = ? AND serverid = ? AND status = 1`;
-    let validUser = await checkValidUser(
-      interaction.user.id,
-      interaction.guildId
-    );
-    if (validUser == -1) {
-      interaction.editReply({
-        embeds: [
-          {
-            description: `No users are set. Set up users using \`/setUser [@user] [emoji]\`.`,
-          },
-        ],
-      });
-    } else if (validUser == 1) {
+    let validUser = await checkValidUser(interaction);
+    if (validUser) {
       let validChannel = await checkTransactionsChannel(
         interaction.channelId,
         interaction.guildId

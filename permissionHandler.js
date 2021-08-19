@@ -5,21 +5,36 @@ module.exports = {
   checkTransactionsChannel,
 };
 
-async function checkValidUser(userid, serverid) {
+async function checkValidUser(interaction) {
+  let userid = interaction.user.id;
+  let serverid = interaction.guildId;
   let db = await openDb();
   return new Promise((resolve, reject) => {
     sql = `SELECT userid FROM users WHERE userid = ? AND serverid = ? AND status = 1`;
     db.get(sql, [userid, serverid]).then((val) => {
       if (val) {
-        resolve(1);
+        resolve(true);
       } else {
         sql = `SELECT userid FROM users WHERE serverid = ? AND status = 1`;
         db.get(sql, [serverid]).then((users) => {
           if (!users) {
-            resolve(-1);
+            interaction.editReply({
+              embeds: [
+                {
+                  description: `No users are set. Set up users using \`/setUser [@user] [emoji]\`.`,
+                },
+              ],
+            });
           } else {
-            resolve(0);
+            interaction.editReply({
+              embeds: [
+                {
+                  description: `This command may only be used by registered users. Use /setuser to register a new user.`,
+                },
+              ],
+            });
           }
+          resolve(false);
         });
       }
     });

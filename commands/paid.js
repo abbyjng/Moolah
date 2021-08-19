@@ -38,19 +38,8 @@ module.exports = {
     let db = await openDb();
     const cost = interaction.options.getInteger("cost");
     const emoji = interaction.options.getString("emoji");
-    let validUser = await checkValidUser(
-      interaction.user.id,
-      interaction.guildId
-    );
-    if (validUser == -1) {
-      interaction.editReply({
-        embeds: [
-          {
-            description: `No users are set. Set up users using \`/setUser [@user] [emoji]\`.`,
-          },
-        ],
-      });
-    } else if (validUser == 1) {
+    let validUser = await checkValidUser(interaction);
+    if (validUser) {
       let validChannel = await checkTransactionsChannel(
         interaction.channelId,
         interaction.guildId
