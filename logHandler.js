@@ -89,15 +89,36 @@ async function getLogEmbed(server) {
         transactions.forEach((t) => {
           if (t.recipient in log) {
             if (t.owner in log[t.recipient]) {
-              if (log[t.owner][t.recipient].value > t.value) {
-                log[t.owner][t.recipient].value -= t.value;
-              } else if (log[t.owner][t.recipient].value > 0) {
-                log[t.recipient][t.owner].value =
-                  t.value - log[t.owner][t.recipient].value;
-                log[t.owner][t.recipient].value = 0;
-              } else {
+              if (t.value < 0) {
+                let leftover = 0;
                 log[t.recipient][t.owner].value += t.value;
+                leftover = -log[t.recipient][t.owner].value;
+                if (leftover > 0) {
+                  log[t.owner][t.recipient].value += leftover;
+                  log[t.recipient][t.owner].value = 0;
+                }
+              } else {
+                let leftover = 0;
+                log[t.owner][t.recipient].value -= t.value;
+                leftover = -log[t.owner][t.recipient].value;
+                if (leftover > 0) {
+                  log[t.recipient][t.owner].value += leftover;
+                  log[t.owner][t.recipient].value = 0;
+                }
               }
+              // if (t.value < 0) { // negative value, due
+              //   if (log[t.recipient][t.owner].value > -t.value) {
+
+              //   }
+              // } else if (log[t.owner][t.recipient].value > t.value) {
+              //   log[t.owner][t.recipient].value -= t.value;
+              // } else if (log[t.owner][t.recipient].value > 0) {
+              //   log[t.recipient][t.owner].value =
+              //     t.value - log[t.owner][t.recipient].value;
+              //   log[t.owner][t.recipient].value = 0;
+              // } else {
+              //   log[t.recipient][t.owner].value += t.value;
+              // }
             }
           }
         });
