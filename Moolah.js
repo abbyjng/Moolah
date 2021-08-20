@@ -89,7 +89,10 @@ client.on("guildCreate", async function (server) {
   server.channels.cache.forEach((channel) => {
     if (channel.type == "GUILD_TEXT" && defaultChannel == "") {
       if (
-        channel.permissionsFor(server.me).has(Permissions.FLAGS.SEND_MESSAGES)
+        channel
+          .permissionsFor(server.me)
+          .has(Permissions.FLAGS.SEND_MESSAGES) &&
+        channel.permissionsFor(server.me).has(Permissions.FLAGS.VIEW_CHANNEL)
       ) {
         defaultChannel = channel;
       }
@@ -142,7 +145,10 @@ client.on("emojiDelete", async function (emoji) {
           if (
             channel
               .permissionsFor(channel.guild.me)
-              .has(Permissions.FLAGS.SEND_MESSAGES)
+              .has(Permissions.FLAGS.SEND_MESSAGES) &&
+            channel
+              .permissionsFor(channel.guild.me)
+              .has(Permissions.FLAGS.VIEW_CHANNEL)
           ) {
             defaultChannel = channel;
           }
@@ -222,7 +228,10 @@ client.on("channelDelete", async function (channel) {
           if (
             channel
               .permissionsFor(channel.guild.me)
-              .has(Permissions.FLAGS.SEND_MESSAGES)
+              .has(Permissions.FLAGS.SEND_MESSAGES) &&
+            channel
+              .permissionsFor(channel.guild.me)
+              .has(Permissions.FLAGS.VIEW_CHANNEL)
           ) {
             defaultChannel = channel;
           }
@@ -257,8 +266,13 @@ client.on("channelUpdate", async function (oldChannel, newChannel) {
   ]);
   if (s) {
     if (
-      setChannel.type !== "GUILD_TEXT" ||
-      !setChannel.permissionsFor(server.me).has(Permissions.FLAGS.SEND_MESSAGES)
+      newChannel.type !== "GUILD_TEXT" ||
+      !newChannel
+        .permissionsFor(newChannel.guild.me)
+        .has(Permissions.FLAGS.VIEW_CHANNEL) ||
+      !newChannel
+        .permissionsFor(newChannel.guild.me)
+        .has(Permissions.FLAGS.SEND_MESSAGES)
     ) {
       let ch = "";
       switch (oldChannel.id) {
@@ -282,16 +296,20 @@ client.on("channelUpdate", async function (oldChannel, newChannel) {
           break;
       }
 
+      defaultChannel = "";
       // send message warning that the channel has been unset
       if (s.alertsid && ch != "alerts") {
         defaultChannel = oldChannel.guild.channels.cache.get(s.alertsid);
       } else {
-        channel.guild.channels.cache.forEach((channel) => {
+        newChannel.guild.channels.cache.forEach((channel) => {
           if (channel.type == "GUILD_TEXT" && defaultChannel == "") {
             if (
               channel
                 .permissionsFor(channel.guild.me)
-                .has(Permissions.FLAGS.SEND_MESSAGES)
+                .has(Permissions.FLAGS.SEND_MESSAGES) &&
+              channel
+                .permissionsFor(channel.guild.me)
+                .has(Permissions.FLAGS.VIEW_CHANNEL)
             ) {
               defaultChannel = channel;
             }
@@ -328,7 +346,10 @@ client.on("messageDelete", async function (message) {
             if (
               channel
                 .permissionsFor(channel.guild.me)
-                .has(Permissions.FLAGS.SEND_MESSAGES)
+                .has(Permissions.FLAGS.SEND_MESSAGES) &&
+              channel
+                .permissionsFor(channel.guild.me)
+                .has(Permissions.FLAGS.VIEW_CHANNEL)
             ) {
               defaultChannel = channel;
             }
@@ -377,7 +398,10 @@ client.on("guildMemberRemove", async function (member) {
           if (
             channel
               .permissionsFor(channel.guild.me)
-              .has(Permissions.FLAGS.SEND_MESSAGES)
+              .has(Permissions.FLAGS.SEND_MESSAGES) &&
+            channel
+              .permissionsFor(channel.guild.me)
+              .has(Permissions.FLAGS.VIEW_CHANNEL)
           ) {
             defaultChannel = channel;
           }
