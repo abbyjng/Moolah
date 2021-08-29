@@ -20,7 +20,7 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName("bought")
     .setDescription("Logs a new transaction.")
-    .addIntegerOption((option) =>
+    .addNumberOption((option) =>
       option
         .setName("cost")
         .setDescription("The total value being charged")
@@ -36,7 +36,7 @@ module.exports = {
     await interaction.deferReply();
 
     let db = await openDb();
-    const cost = interaction.options.getInteger("cost");
+    const cost = interaction.options.getNumber("cost");
     const description = interaction.options.getString("description");
     sql = `SELECT userid FROM users WHERE userid = ? AND serverid = ? AND status = 1`;
     let validUser = await checkValidUser(interaction);

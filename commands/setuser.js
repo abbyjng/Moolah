@@ -57,7 +57,9 @@ module.exports = {
         } else {
           sql = `INSERT OR REPLACE INTO users (serverid, userid, emoji, status) 
 								VALUES (?, ?, ?, 1);`;
-          db.run(sql, [interaction.guildId, user.id, emojiStr]);
+          db.run(sql, [interaction.guildId, user.id, emojiStr]).then(() => {
+            updateLog(interaction.guild);
+          });
           interaction.reply({
             embeds: [
               {
