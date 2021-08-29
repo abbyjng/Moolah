@@ -38,6 +38,8 @@ In order to add your token to the bot, create a new file `auth.json` in the base
 
 After you've pasted your token in the auth.json file, run `node Moolah.js` from your terminal in the base directory. The console should log `Logged in as [your bot's name]!` after a second or two.
 
+In order to actually run any code, you will need to set up your slash commands within your testing server. Within `slashCommands.js`, edit lines 12 and 13 and replace the strings with strings containing your bot id and testing server id. From lines 26-34, read the descriptions of each slash command type and choose the one which works best for you. (For testing, use local commands.) Run `node slashCommands.js`.
+
 Your code is now set up and ready to be edited!
 
 **Submit your changes**
