@@ -20,7 +20,7 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName("owe")
     .setDescription("Logs that you owe some amount to another user.")
-    .addIntegerOption((option) =>
+    .addNumberOption((option) =>
       option
         .setName("cost")
         .setDescription("The total value owed")
@@ -42,7 +42,7 @@ module.exports = {
     await interaction.deferReply();
 
     let db = await openDb();
-    const cost = interaction.options.getInteger("cost");
+    const cost = interaction.options.getNumber("cost");
     const user = interaction.options.getUser("user");
     const description = interaction.options.getString("description");
     let validUser = await checkValidUser(interaction);
