@@ -277,7 +277,7 @@ function transactionCancelled(interaction) {
   interaction.editReply({
     embeds: [
       {
-        title: `Transaction was cancelled.`,
+        description: `Transaction was cancelled.`,
         color: 0xff0000,
       },
     ],
@@ -288,7 +288,7 @@ function transactionTimedOut(interaction) {
   interaction.editReply({
     embeds: [
       {
-        title: `Transaction timed out after 2 minutes.`,
+        description: `Transaction timed out after 2 minutes.`,
         color: 0xff0000,
       },
     ],

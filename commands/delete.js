@@ -145,7 +145,7 @@ async function handleDelete(
   return new Promise((resolve, reject) => {
     emojis = ["❌", "✅"];
 
-    var descString = `**Transaction #${number}:**\n`;
+    var descString = `**Transaction #${number + 1}:**\n`;
     if (transaction.description !== "defaultPaidDescription") {
       descString += `<@!${recipients[0].owner}> → `;
       recipients.forEach((recipient) => {
@@ -204,7 +204,7 @@ async function handleDelete(
           interaction.editReply({
             embeds: [
               {
-                description: `Action timed out - transaction #${number} has not been deleted.`,
+                description: `Action timed out - transaction #${number + 1} has not been deleted.`,
                 color: 0xff0000,
               },
             ],
@@ -214,7 +214,7 @@ async function handleDelete(
           interaction.editReply({
             embeds: [
               {
-                description: `Action cancelled - transaction #${number} has not been deleted.`,
+                description: `Action cancelled - transaction #${number + 1} has not been deleted.`,
                 color: 0xff0000,
               },
             ],
@@ -224,7 +224,7 @@ async function handleDelete(
           interaction.editReply({
             embeds: [
               {
-                description: `Transaction #${number} deleted successfully.`,
+                description: `Transaction #${number + 1} deleted successfully.`,
                 color: 0x00ff00,
               },
             ],
