@@ -4,15 +4,14 @@ let db;
 
 module.exports = {
   updateLog,
-  getLogEmbed,
+  getLogEmbeds,
 };
 
 async function updateLog(server, newchannel = "") {
   db = await openDb();
   if (newchannel !== "") {
     c = await server.channels.cache.get(newchannel);
-    var e = await getLogEmbed(server);
-    c.send({ embeds: [e] }).then((m) => {
+    c.send({ embeds: await getLogEmbeds(server) }).then((m) => {
       sql = `UPDATE servers SET logembed = ? WHERE serverid = ?;`;
       db.run(sql, [m.id, server.id]);
     });
@@ -27,14 +26,12 @@ async function updateLog(server, newchannel = "") {
           (async function () {
             if (!oldEmbed) {
               // in case something breaks in sending the original embed somehow
-              embed = await getLogEmbed(server);
-              c.send({ embeds: [embed] }).then((m) => {
+              c.send({ embeds: await getLogEmbeds(server) }).then((m) => {
                 sql = `UPDATE servers SET logembed = ? WHERE serverid = ?;`;
                 db.run(sql, [m.id, server.id]);
               });
             } else {
-              embed = await getLogEmbed(server);
-              oldEmbed.edit({ embeds: [embed] });
+              oldEmbed.edit({ embeds: [await getLogEmbeds(server)] });
             }
           })();
         })
@@ -43,8 +40,9 @@ async function updateLog(server, newchannel = "") {
   }
 }
 
-async function getLogEmbed(server) {
+async function getLogEmbeds(server) {
   db = await openDb();
+  embeds = [];
   return new Promise((resolve, reject) => {
     var log = {};
     // populate the log dictionary with users
@@ -67,10 +65,11 @@ async function getLogEmbed(server) {
         });
       });
 
-      var returnEmbed = {};
-      returnEmbed.title = "Money log";
-      returnEmbed.description = description;
-      returnEmbed.color = 0x2471a3;
+      var titleEmbed = {};
+      titleEmbed.title = "Money log";
+      titleEmbed.description = description;
+      titleEmbed.color = 0x2471a3;
+      embeds.push(titleEmbed);
 
       // get all transactions and handle them
       sql = `SELECT
@@ -106,30 +105,12 @@ async function getLogEmbed(server) {
                   log[t.owner][t.recipient].value = 0;
                 }
               }
-              // if (t.value < 0) { // negative value, due
-              //   if (log[t.recipient][t.owner].value > -t.value) {
-
-              //   }
-              // } else if (log[t.owner][t.recipient].value > t.value) {
-              //   log[t.owner][t.recipient].value -= t.value;
-              // } else if (log[t.owner][t.recipient].value > 0) {
-              //   log[t.recipient][t.owner].value =
-              //     t.value - log[t.owner][t.recipient].value;
-              //   log[t.owner][t.recipient].value = 0;
-              // } else {
-              //   log[t.recipient][t.owner].value += t.value;
-              // }
             }
           }
         });
 
-        returnEmbed.fields = [];
-
         for (user in log) {
-          var newField = {
-            name: `-----`,
-            value: ``,
-          };
+          var subEmbed = {};
           var value = `<@!${user}> owes:\n`;
 
           for (key in log[user]) {
@@ -138,11 +119,12 @@ async function getLogEmbed(server) {
             } | `;
           }
           value = value.slice(0, -2) + `\n`;
-          newField.value = value;
-          returnEmbed.fields.push(newField);
+          subEmbed.description = value;
+          subEmbed.color = 0x2471a3;
+          embeds.push(subEmbed);
         }
 
-        resolve(returnEmbed);
+        resolve(embeds);
       });
     });
   });
