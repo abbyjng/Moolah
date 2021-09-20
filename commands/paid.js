@@ -6,6 +6,7 @@ const {
   checkValidUser,
   checkTransactionsChannel,
 } = require("./../permissionHandler.js");
+const { MAX_COST } = require("./../constants.js");
 
 const StatusEnum = Object.freeze({
   WORKING: 1,
@@ -23,7 +24,7 @@ module.exports = {
     .addNumberOption((option) =>
       option
         .setName("cost")
-        .setDescription("The total value being paid")
+        .setDescription(`The total value being paid [$0 > x > $${MAX_COST}]`)
         .setRequired(true)
     )
     .addUserOption((option) =>
@@ -50,6 +51,14 @@ module.exports = {
             embeds: [
               {
                 description: `Invalid command usage: the value submitted must be a positive value.`,
+              },
+            ],
+          });
+        } else if (cost >= MAX_COST) {
+          interaction.editReply({
+            embeds: [
+              {
+                description: `Invalid command usage: the value submitted must be less than ${MAX_COST}.`,
               },
             ],
           });

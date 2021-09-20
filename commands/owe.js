@@ -6,6 +6,7 @@ const {
   checkValidUser,
   checkTransactionsChannel,
 } = require("./../permissionHandler.js");
+const { MAX_DESCRIPTION, MAX_COST } = require("./../constants.js");
 
 const StatusEnum = Object.freeze({
   WORKING: 1,
@@ -23,7 +24,7 @@ module.exports = {
     .addNumberOption((option) =>
       option
         .setName("cost")
-        .setDescription("The total value owed")
+        .setDescription(`The total value owed [$0 > x > $${MAX_COST}]`)
         .setRequired(true)
     )
     .addUserOption((option) =>
@@ -35,7 +36,9 @@ module.exports = {
     .addStringOption((option) =>
       option
         .setName("description")
-        .setDescription("The description of the transaction")
+        .setDescription(
+          `The description of the transaction [<${MAX_DESCRIPTION} chars]`
+        )
         .setRequired(false)
     ),
   async execute(interaction) {
@@ -45,6 +48,7 @@ module.exports = {
     const cost = interaction.options.getNumber("cost");
     const user = interaction.options.getUser("user");
     const description = interaction.options.getString("description");
+
     let validUser = await checkValidUser(interaction);
     if (validUser) {
       let validChannel = await checkTransactionsChannel(
@@ -57,6 +61,22 @@ module.exports = {
             embeds: [
               {
                 description: `Invalid command usage: the value submitted must be a positive value.`,
+              },
+            ],
+          });
+        } else if (cost >= MAX_COST) {
+          interaction.editReply({
+            embeds: [
+              {
+                description: `Invalid command usage: the value submitted must be less than ${MAX_COST}.`,
+              },
+            ],
+          });
+        } else if (description && description.length > MAX_DESCRIPTION) {
+          interaction.editReply({
+            embeds: [
+              {
+                description: `Invalid command usage: the description submitted must be <${MAX_DESCRIPTION} characters long.`,
               },
             ],
           });

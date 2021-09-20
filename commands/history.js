@@ -32,6 +32,15 @@ module.exports = {
 
       transactionids = await db.all(sql, [interaction.guildId]);
 
+      sql = `SELECT userid FROM users WHERE serverid = ?`;
+      let numUsers = (await db.all(sql, [interaction.guildId])).length;
+      let entriesPerScreen = Math.min(
+        Math.floor(
+          4096 / (6 + 21 + 3 + (14 + 54) * (numUsers - 1) + 13 + 102 + 11)
+        ),
+        10
+      );
+
       // loop thru them all and get info for each one
       tlist = [];
       invalidTransactions = 0; // deal with this later lol
@@ -68,7 +77,12 @@ module.exports = {
               if (a.created > b.created) return 1;
               else return -1;
             });
-            handleLog(interaction, tlist, interaction.user.id);
+            handleLog(
+              interaction,
+              tlist,
+              interaction.user.id,
+              entriesPerScreen
+            );
           }
         });
       });
@@ -91,16 +105,20 @@ function noTransactions(interaction) {
   interaction.editReply({ embeds: [embed] });
 }
 
-function handleLog(interaction, transactions, authorid) {
+function handleLog(interaction, transactions, authorid, entriesPerScreen) {
   embed = new Discord.MessageEmbed()
     .setTitle(`Transaction log`)
     .setDescription(
-      getLogMessage(transactions, Math.max(transactions.length - 10, 0))
+      getLogMessage(
+        transactions,
+        Math.max(transactions.length - entriesPerScreen, 0),
+        entriesPerScreen
+      )
     );
   interaction.editReply({ embeds: [embed] }).then((m) => {
-    l[(m.createdAt, authorid)] = transactions.length - 10;
+    l[(m.createdAt, authorid)] = transactions.length - entriesPerScreen;
 
-    if (transactions.length > 10) {
+    if (transactions.length > entriesPerScreen) {
       Promise.all([
         m.react("⏬"),
         m.react("⬇️"),
@@ -130,10 +148,14 @@ function handleLog(interaction, transactions, authorid) {
           newEmbed = new Discord.MessageEmbed()
             .setTitle(`Transaction log`)
             .setDescription(
-              getLogMessage(transactions, transactions.length - 10)
+              getLogMessage(
+                transactions,
+                transactions.length - entriesPerScreen,
+                entriesPerScreen
+              )
             );
           m.edit({ embeds: [newEmbed] });
-          l[(m.createdAt, authorid)] = transactions.length - 10;
+          l[(m.createdAt, authorid)] = transactions.length - entriesPerScreen;
         } else if (reaction.emoji.name === "⬇️") {
           // go 10 down
           newEmbed = new Discord.MessageEmbed()
@@ -142,36 +164,38 @@ function handleLog(interaction, transactions, authorid) {
               getLogMessage(
                 transactions,
                 Math.min(
-                  l[(m.createdAt, authorid)] + 10,
-                  transactions.length - 10
-                )
+                  l[(m.createdAt, authorid)] + entriesPerScreen,
+                  transactions.length - entriesPerScreen
+                ),
+                entriesPerScreen
               )
             );
           m.edit({ embeds: [newEmbed] });
           l[(m.createdAt, authorid)] = Math.min(
-            l[(m.createdAt, authorid)] + 10,
-            transactions.length - 10
+            l[(m.createdAt, authorid)] + entriesPerScreen,
+            transactions.length - entriesPerScreen
           );
         } else if (reaction.emoji.name === "⬆️") {
-          // go 10 up
+          // go entriesPerScreen up
           newEmbed = new Discord.MessageEmbed()
             .setTitle(`Transaction log`)
             .setDescription(
               getLogMessage(
                 transactions,
-                Math.max(l[(m.createdAt, authorid)] - 10, 0)
+                Math.max(l[(m.createdAt, authorid)] - entriesPerScreen, 0),
+                entriesPerScreen
               )
             );
           m.edit({ embeds: [newEmbed] });
           l[(m.createdAt, authorid)] = Math.max(
-            l[(m.createdAt, authorid)] - 10,
+            l[(m.createdAt, authorid)] - entriesPerScreen,
             0
           );
         } else if (reaction.emoji.name === "⏫") {
           // go to the top of the list
           newEmbed = new Discord.MessageEmbed()
             .setTitle(`Transaction log`)
-            .setDescription(getLogMessage(transactions, 0));
+            .setDescription(getLogMessage(transactions, 0, entriesPerScreen));
           m.edit({ embeds: [newEmbed] });
           l[(m.createdAt, authorid)] = 0;
         }
@@ -194,7 +218,11 @@ function handleLog(interaction, transactions, authorid) {
         newEmbed = new Discord.MessageEmbed()
           .setTitle(`Transaction log -- Inactive`)
           .setDescription(
-            getLogMessage(transactions, l[(m.createdAt, authorid)])
+            getLogMessage(
+              transactions,
+              l[(m.createdAt, authorid)],
+              entriesPerScreen
+            )
           );
         m.edit({ embeds: [newEmbed] });
       });
@@ -202,11 +230,11 @@ function handleLog(interaction, transactions, authorid) {
   });
 }
 
-function getLogMessage(transactions, startIndex) {
+function getLogMessage(transactions, startIndex, entriesPerScreen) {
   retStr = ``;
   for (
     var i = startIndex;
-    i < Math.min(startIndex + 10, transactions.length);
+    i < Math.min(startIndex + entriesPerScreen, transactions.length);
     ++i
   ) {
     if (transactions[i].description == "defaultPaidDescription") {

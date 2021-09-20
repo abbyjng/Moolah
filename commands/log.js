@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require("@discordjs/builders");
-const { getLogEmbed } = require("./../logHandler.js");
+const { getLogEmbeds } = require("./../logHandler.js");
 const { checkTransactionsChannel } = require("./../permissionHandler.js");
 
 let l = {};
@@ -18,7 +18,7 @@ module.exports = {
       interaction.guildId
     );
     if (!validChannel) {
-      interaction.editReply({ embeds: [await getLogEmbed(interaction.guild)] });
+      interaction.editReply({ embeds: await getLogEmbeds(interaction.guild) });
     } else {
       interaction.editReply({
         embeds: [
