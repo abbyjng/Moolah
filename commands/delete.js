@@ -146,7 +146,22 @@ async function handleDelete(
     emojis = ["❌", "✅"];
 
     var descString = `**Transaction #${number + 1}:**\n`;
-    if (transaction.description !== "defaultPaidDescription") {
+    if (transaction.description == "defaultPaidDescription") {
+      descString += `<@!${recipients[0].owner}> paid ${recipients[0].emoji} `;
+      descString += `[$${transaction.value.toFixed(2)}] | ${getFormattedDate(
+        transaction.created
+      )}\n`;
+    } else if (transaction.value < 0) {
+      // owe
+      descString += `<@!${recipients[0].owner}> owes ${
+        recipients[0].emoji
+      } `;
+      descString += `[$${(-transaction.value).toFixed(2)}] `;
+      if (transaction.description) {
+        descString += `"${transaction.description}" `;
+      }
+      descString += `| ${getFormattedDate(transaction.created)}\n`;
+    } else {
       descString += `<@!${recipients[0].owner}> → `;
       recipients.forEach((recipient) => {
         descString += recipient.emoji;
@@ -160,11 +175,6 @@ async function handleDelete(
         descString += `"${transaction.description}" `;
       }
       descString += `| ${getFormattedDate(transaction.created)}\n`;
-    } else {
-      descString += `<@!${recipients[0].owner}> paid ${recipients[0].emoji} `;
-      descString += `[$${transaction.value.toFixed(2)}] | ${getFormattedDate(
-        transaction.created
-      )}\n`;
     }
 
     embed = new Discord.MessageEmbed()
