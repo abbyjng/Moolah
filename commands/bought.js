@@ -394,7 +394,7 @@ function transactionInvalid(interaction) {
   interaction.editReply({
     embeds: [
       {
-        title: `Invalid input. You may not submit a transaction for only yourself.`,
+        description: `Invalid input. You may not submit a transaction for only yourself.`,
         color: 0xff0000,
       },
     ],
@@ -405,7 +405,7 @@ function transactionCancelled(interaction) {
   interaction.editReply({
     embeds: [
       {
-        title: `Transaction was cancelled.`,
+        description: `Transaction was cancelled.`,
         color: 0xff0000,
       },
     ],
@@ -416,7 +416,7 @@ function transactionTimedOut(interaction) {
   interaction.editReply({
     embeds: [
       {
-        title: `Transaction timed out after 2 minutes.`,
+        description: `Transaction timed out after 2 minutes.`,
         color: 0xff0000,
       },
     ],
