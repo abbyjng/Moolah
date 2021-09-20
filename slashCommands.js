@@ -9,8 +9,8 @@ const commandFiles = fs
   .filter((file) => file.endsWith(".js"));
 
 // Place your client and guild ids here
-const clientId = "bot-id-here";
-const guildId = "guild-id-here";
+const clientId = "872670044595826698";
+const guildId = "839665867461361720";
 
 for (const file of commandFiles) {
   const command = require(`./commands/${file}`);

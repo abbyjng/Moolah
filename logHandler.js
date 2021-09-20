@@ -26,12 +26,14 @@ async function updateLog(server, newchannel = "") {
           (async function () {
             if (!oldEmbed) {
               // in case something breaks in sending the original embed somehow
-              c.send({ embeds: await getLogEmbeds(server) }).then((m) => {
+              let newEmbeds = await getLogEmbeds(server);
+              c.send({ embeds: newEmbeds }).then((m) => {
                 sql = `UPDATE servers SET logembed = ? WHERE serverid = ?;`;
                 db.run(sql, [m.id, server.id]);
               });
             } else {
-              oldEmbed.edit({ embeds: [await getLogEmbeds(server)] });
+              let newEmbeds = await getLogEmbeds(server);
+              oldEmbed.edit({ embeds: newEmbeds });
             }
           })();
         })
@@ -109,16 +111,36 @@ async function getLogEmbeds(server) {
           }
         });
 
+        let numUsers = users.length;
+        let usersPerEmbed = Math.floor(
+          4096 / (21 + 6 + (14 + 54) * (numUsers - 1))
+        );
+        let counter = 0;
+        var value = "";
+
         for (user in log) {
-          var subEmbed = {};
-          var value = `<@!${user}> owes:\n`;
+          value += `<@!${user}> owes:\n`;
 
           for (key in log[user]) {
             value += `$${log[user][key].value.toFixed(2)} to ${
               log[user][key].emoji
             } | `;
           }
-          value = value.slice(0, -2) + `\n`;
+          value = value.slice(0, -2) + `\n\n`;
+
+          if (counter == usersPerEmbed - 1) {
+            var subEmbed = {};
+            subEmbed.description = value;
+            subEmbed.color = 0x2471a3;
+            embeds.push(subEmbed);
+            counter = 0;
+            value = "";
+          } else {
+            counter += 1;
+          }
+        }
+        if (counter != 0) {
+          subEmbed = {};
           subEmbed.description = value;
           subEmbed.color = 0x2471a3;
           embeds.push(subEmbed);

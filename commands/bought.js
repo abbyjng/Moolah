@@ -6,6 +6,7 @@ const {
   checkValidUser,
   checkTransactionsChannel,
 } = require("./../permissionHandler.js");
+const { MAX_DESCRIPTION, MAX_COST } = require("./../constants.js");
 
 const StatusEnum = Object.freeze({
   WORKING: 1,
@@ -23,13 +24,15 @@ module.exports = {
     .addNumberOption((option) =>
       option
         .setName("cost")
-        .setDescription("The total value being charged")
+        .setDescription(`The total value being charged [$0 > x > $${MAX_COST}]`)
         .setRequired(true)
     )
     .addStringOption((option) =>
       option
         .setName("description")
-        .setDescription("The description of the transaction")
+        .setDescription(
+          `The description of the transaction [<${MAX_DESCRIPTION} chars]`
+        )
         .setRequired(false)
     ),
   async execute(interaction) {
@@ -38,6 +41,7 @@ module.exports = {
     let db = await openDb();
     const cost = interaction.options.getNumber("cost");
     const description = interaction.options.getString("description");
+
     sql = `SELECT userid FROM users WHERE userid = ? AND serverid = ? AND status = 1`;
     let validUser = await checkValidUser(interaction);
     if (validUser) {
@@ -54,6 +58,14 @@ module.exports = {
               },
             ],
           });
+        } else if (cost >= MAX_COST) {
+          interaction.editReply({
+            embeds: [
+              {
+                description: `Invalid command usage: the value submitted must be less than ${MAX_COST}.`,
+              },
+            ],
+          });
         } else if (description === "defaultPaidDescription") {
           interaction.editReply({
             embeds: [
@@ -62,11 +74,11 @@ module.exports = {
               },
             ],
           });
-        } else if (description && description.length > 200) {
+        } else if (description && description.length > MAX_DESCRIPTION) {
           interaction.editReply({
             embeds: [
               {
-                description: `Invalid command usage: the description submitted must be <200 characters long.`,
+                description: `Invalid command usage: the description submitted must be <${MAX_DESCRIPTION} characters long.`,
               },
             ],
           });
@@ -99,10 +111,9 @@ module.exports = {
                         transactionid.lastID,
                         interaction.user.id,
                         recipient.userid,
-                      ]).then(() => {
-                        updateLog(interaction.guild);
-                      });
+                      ]);
                     });
+                    updateLog(interaction.guild);
                   });
                 });
               }

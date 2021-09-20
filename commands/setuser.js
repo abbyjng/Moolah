@@ -1,6 +1,7 @@
 const { SlashCommandBuilder } = require("@discordjs/builders");
 const { openDb } = require("./../databaseHandler.js");
 const { updateLog } = require("./../logHandler.js");
+const { MAX_USERS } = require("./../constants.js");
 
 const emojiRegex = require("emoji-regex/RGI_Emoji.js");
 const regex = emojiRegex();
@@ -27,87 +28,107 @@ module.exports = {
     let db = await openDb();
     const user = interaction.options.getUser("user");
     const emojiStr = interaction.options.getString("emoji");
-    sql = `SELECT userid FROM users WHERE emoji = ? AND serverid = ? AND status = 1`;
-    result = await db.get(sql, [emojiStr, interaction.guildId]);
-    if (result) {
+
+    let result = await db.all(
+      `SELECT userid FROM users WHERE serverid = ? AND userid = ?`,
+      [interaction.guildId, user.id]
+    );
+    let numUsers = (
+      await db.all(`SELECT userid FROM users WHERE serverid = ?`, [
+        interaction.guildId,
+      ])
+    ).length;
+    if (result && numUsers >= MAX_USERS) {
       interaction.reply({
         embeds: [
           {
-            description: `Emoji could not be set. ${emojiStr} has already been assigned to <@${result.userid}>.`,
+            description: `User could not be set. ${MAX_USERS} users have already been set in this server. You can delete users by running \`/deleteuser\`.`,
           },
         ],
       });
     } else {
-      if (emojiStr.charAt(0) == "<") {
-        // server specific emoji
-        // search for emoji within server
-        emoji = interaction.guild.emojis.cache.find(
-          (emoji) =>
-            emoji.id === emojiStr.slice(emojiStr.indexOf(":", 2) + 1, -1)
-        );
-        if (!emoji) {
-          // emoji doesn't exist in server
-          interaction.reply({
-            embeds: [
-              {
-                description: `Emoji could not be set. Emojis must be default or available in this server.`,
-              },
-            ],
-          });
-        } else {
-          sql = `INSERT OR REPLACE INTO users (serverid, userid, emoji, status) 
-								VALUES (?, ?, ?, 1);`;
-          db.run(sql, [interaction.guildId, user.id, emojiStr]).then(() => {
-            updateLog(interaction.guild);
-          });
-          interaction.reply({
-            embeds: [
-              {
-                description: `User <@!${user.id}> successfully set to ${emojiStr}.`,
-              },
-            ],
-          });
-        }
-      } else if (!isValidEmoji(emojiStr)) {
-        // emoji is not a regex
+      sql = `SELECT userid FROM users WHERE emoji = ? AND serverid = ?`;
+      result = await db.get(sql, [emojiStr, interaction.guildId]);
+      if (result) {
         interaction.reply({
           embeds: [
             {
-              description: `Emoji could not be set. \`${emojiStr}\` is an invalid emoji.`,
+              description: `Emoji could not be set. ${emojiStr} has already been assigned to <@${result.userid}>.`,
             },
           ],
         });
       } else {
-        // default emoji
-        if (emojiStr == "✅") {
+        if (emojiStr.charAt(0) == "<") {
+          // server specific emoji
+          // search for emoji within server
+          emoji = interaction.guild.emojis.cache.find(
+            (emoji) =>
+              emoji.id === emojiStr.slice(emojiStr.indexOf(":", 2) + 1, -1)
+          );
+          if (!emoji) {
+            // emoji doesn't exist in server
+            interaction.reply({
+              embeds: [
+                {
+                  description: `Emoji could not be set. Emojis must be default or available in this server.`,
+                },
+              ],
+            });
+          } else {
+            sql = `INSERT OR REPLACE INTO users (serverid, userid, emoji, status) 
+								VALUES (?, ?, ?, 1);`;
+            db.run(sql, [interaction.guildId, user.id, emojiStr]).then(() => {
+              updateLog(interaction.guild);
+            });
+            interaction.reply({
+              embeds: [
+                {
+                  description: `User <@!${user.id}> successfully set to ${emojiStr}.`,
+                },
+              ],
+            });
+          }
+        } else if (!isValidEmoji(emojiStr)) {
+          // emoji is not a regex
           interaction.reply({
             embeds: [
               {
-                description: `Emoji could not be set. ✅ is an invalid emoji, try something else.`,
-              },
-            ],
-          });
-        } else if (emojiStr == "❌") {
-          interaction.reply({
-            embeds: [
-              {
-                description: `Emoji could not be set. ❌ is an invalid emoji, try something else.`,
+                description: `Emoji could not be set. \`${emojiStr}\` is an invalid emoji.`,
               },
             ],
           });
         } else {
-          sql = `INSERT OR REPLACE INTO users (serverid, userid, emoji, status) 
+          // default emoji
+          if (emojiStr == "✅") {
+            interaction.reply({
+              embeds: [
+                {
+                  description: `Emoji could not be set. ✅ is an invalid emoji, try something else.`,
+                },
+              ],
+            });
+          } else if (emojiStr == "❌") {
+            interaction.reply({
+              embeds: [
+                {
+                  description: `Emoji could not be set. ❌ is an invalid emoji, try something else.`,
+                },
+              ],
+            });
+          } else {
+            sql = `INSERT OR REPLACE INTO users (serverid, userid, emoji, status) 
 								VALUES (?, ?, ?, 1);`;
-          db.run(sql, [interaction.guildId, user.id, emojiStr]).then(() => {
-            updateLog(interaction.guild);
-          });
-          interaction.reply({
-            embeds: [
-              {
-                description: `User <@!${user.id}> successfully set to ${emojiStr}.`,
-              },
-            ],
-          });
+            db.run(sql, [interaction.guildId, user.id, emojiStr]).then(() => {
+              updateLog(interaction.guild);
+            });
+            interaction.reply({
+              embeds: [
+                {
+                  description: `User <@!${user.id}> successfully set to ${emojiStr}.`,
+                },
+              ],
+            });
+          }
         }
       }
     }
