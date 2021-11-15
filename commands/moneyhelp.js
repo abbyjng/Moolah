@@ -27,7 +27,7 @@ module.exports = {
             },
             {
               name: `/log`,
-              value: `Displays the current log of balances between all registered users. This is the same log which displays in a registered log channel.\n----------`,
+              value: `Displays the current log of balances between all active users. This is the same log which displays in a registered log channel.\n----------`,
             },
             {
               name: `/history`,

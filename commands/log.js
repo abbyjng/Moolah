@@ -8,7 +8,7 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName("log")
     .setDescription(
-      "Displays the current log of balances between registered users."
+      "Displays the current log of balances between active users."
     ),
   async execute(interaction) {
     await interaction.deferReply();

@@ -125,7 +125,7 @@ module.exports = {
             interaction.editReply({
               embeds: [
                 {
-                  description: `<@!${user.id}> is not a registered user. Use /setuser to register a new user.`,
+                  description: `<@!${user.id}> is not an active user. Use /setuser to register a new user.`,
                 },
               ],
             });

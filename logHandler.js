@@ -108,6 +108,7 @@ async function getLogEmbeds(server) {
 }
 
 async function getLogDict(users, serverid) {
+  db = await openDb();
   return new Promise((resolve, reject) => {
     log = {};
     users.forEach((user) => {

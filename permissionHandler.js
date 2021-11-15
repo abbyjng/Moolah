@@ -29,7 +29,7 @@ async function checkValidUser(interaction) {
             interaction.editReply({
               embeds: [
                 {
-                  description: `This command may only be used by registered users. Use /setuser to register a new user.`,
+                  description: `This command may only be used by active users. Use /setuser to register a new user.`,
                 },
               ],
             });

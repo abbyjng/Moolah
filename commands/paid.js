@@ -1,7 +1,7 @@
 const Discord = require("discord.js");
 const { SlashCommandBuilder } = require("@discordjs/builders");
 const { openDb } = require("./../databaseHandler.js");
-const { updateLog } = require("./../logHandler.js");
+const { updateLog, getLogDict } = require("./../logHandler.js");
 const {
   checkValidUser,
   checkTransactionsChannel,
@@ -21,92 +21,60 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName("paid")
     .setDescription("Logs a new payment.")
-    .addNumberOption((option) =>
-      option
-        .setName("cost")
-        .setDescription(`The total value being paid [$0 > x > $${MAX_COST}]`)
-        .setRequired(true)
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName("value")
+        .setDescription("Pay a specific value to a user")
+        .addNumberOption((option) =>
+          option
+            .setName("cost")
+            .setDescription(
+              `The total value being paid [$0 > x > $${MAX_COST}]`
+            )
+            .setRequired(true)
+        )
+        .addUserOption((option) =>
+          option
+            .setName("user")
+            .setDescription("The person being paid")
+            .setRequired(false)
+        )
     )
-    .addUserOption((option) =>
-      option
-        .setName("user")
-        .setDescription("The person being paid")
-        .setRequired(false)
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName("all")
+        .setDescription("Pay all your the owed value to a user")
+        .addUserOption((option) =>
+          option
+            .setName("user")
+            .setDescription("The person being paid")
+            .setRequired(true)
+        )
     ),
   async execute(interaction) {
     await interaction.deferReply();
 
     let db = await openDb();
-    const cost = interaction.options.getNumber("cost");
+
+    let cost;
     const user = interaction.options.getUser("user");
+
+    let validTransaction = true;
+
     let validUser = await checkValidUser(interaction);
     if (validUser) {
-      let validChannel = await checkTransactionsChannel(
-        interaction.channelId,
-        interaction.guildId
-      );
-      if (!validChannel) {
-        if (cost <= 0) {
-          interaction.editReply({
-            embeds: [
-              {
-                description: `Invalid command usage: the value submitted must be a positive value.`,
-              },
-            ],
-          });
-        } else if (cost >= MAX_COST) {
-          interaction.editReply({
-            embeds: [
-              {
-                description: `Invalid command usage: the value submitted must be less than ${MAX_COST}.`,
-              },
-            ],
-          });
-        } else if (!user) {
-          // do embed
-          sql = `SELECT userid, emoji FROM users WHERE serverid = ? AND status = 1`;
-          users = await db.all(sql, [interaction.guildId]);
-          (async function () {
-            handlePayment(
-              interaction,
-              interaction.user.id,
-              users,
-              getFormattedUsers(users, interaction.user.id),
-              cost
-            ).then((recipient) => {
-              if (recipient !== 0 && recipient !== -1) {
-                sql = `INSERT INTO transactions (serverid, value, description)
-                                        VALUES (?, ?, "defaultPaidDescription")`;
-                db.run(sql, [interaction.guildId, cost]).then(() => {
-                  db.run("SELECT last_insert_rowid()").then((transactionid) => {
-                    sql = `INSERT INTO transactionhands (serverid, transactionid, owner, recipient)
-                                                VALUES (?, ?, ?, ?);`;
-                    db.run(sql, [
-                      interaction.guildId,
-                      transactionid.lastID,
-                      interaction.user.id,
-                      recipient.userid,
-                    ]).then(() => {
-                      updateLog(interaction.guild);
-                    });
-                  });
-                });
-              }
-            });
-          })();
-        } else {
-          // try tagged user
-          sql = `SELECT emoji FROM users WHERE userid = ? AND serverid = ? AND status = 1`;
-          result = await db.get(sql, [user.id, interaction.guildId]);
-          if (!result) {
-            interaction.editReply({
-              embeds: [
-                {
-                  description: `<@!${user.id}> is not a registered user. Use /setuser to register a new user.`,
-                },
-              ],
-            });
-          } else if (user.id === interaction.user.id) {
+      if (interaction.options.getSubcommand() === "value") {
+        cost = interaction.options.getNumber("cost");
+      } else {
+        // all
+        sql = `SELECT userid, emoji FROM users WHERE serverid = ? AND status = 1`;
+        let users = await db.all(sql, [interaction.guildId]);
+        let log = await getLogDict(users, interaction.guildId);
+
+        sql = `SELECT userid, emoji FROM users WHERE userid = ? AND serverid = ? AND status = 1`;
+        let recipient = await db.all(sql, [user.id, interaction.guildId]);
+        if (recipient.length != 0) {
+          if (user.id === interaction.user.id) {
             interaction.editReply({
               embeds: [
                 {
@@ -114,42 +82,144 @@ module.exports = {
                 },
               ],
             });
+            validTransaction = false;
+          }
+          cost = log[`${interaction.user.id}`][`${user.id}`]["value"];
+          if (cost === 0) {
+            interaction.editReply({
+              embeds: [
+                {
+                  description: `Invalid action: you do not owe <@!${user.id}> anything.`,
+                },
+              ],
+            });
+            validTransaction = false;
+          }
+        } else {
+          interaction.editReply({
+            embeds: [
+              {
+                description: `<@!${user.id}> is not an active user. Use /setuser to register a new user.`,
+              },
+            ],
+          });
+          validTransaction = false;
+        }
+      }
+
+      if (validTransaction) {
+        let validChannel = await checkTransactionsChannel(
+          interaction.channelId,
+          interaction.guildId
+        );
+        if (!validChannel) {
+          if (cost <= 0) {
+            interaction.editReply({
+              embeds: [
+                {
+                  description: `Invalid command usage: the value submitted must be a positive value.`,
+                },
+              ],
+            });
+          } else if (cost >= MAX_COST) {
+            interaction.editReply({
+              embeds: [
+                {
+                  description: `Invalid command usage: the value submitted must be less than ${MAX_COST}.`,
+                },
+              ],
+            });
+          } else if (!user) {
+            // do embed
+            sql = `SELECT userid, emoji FROM users WHERE serverid = ? AND status = 1`;
+            users = await db.all(sql, [interaction.guildId]);
+            (async function () {
+              handlePayment(
+                interaction,
+                interaction.user.id,
+                users,
+                getFormattedUsers(users, interaction.user.id),
+                cost
+              ).then((recipient) => {
+                if (recipient !== 0 && recipient !== -1) {
+                  sql = `INSERT INTO transactions (serverid, value, description)
+                                        VALUES (?, ?, "defaultPaidDescription")`;
+                  db.run(sql, [interaction.guildId, cost]).then(() => {
+                    db.run("SELECT last_insert_rowid()").then(
+                      (transactionid) => {
+                        sql = `INSERT INTO transactionhands (serverid, transactionid, owner, recipient)
+                                                VALUES (?, ?, ?, ?);`;
+                        db.run(sql, [
+                          interaction.guildId,
+                          transactionid.lastID,
+                          interaction.user.id,
+                          recipient.userid,
+                        ]).then(() => {
+                          updateLog(interaction.guild);
+                        });
+                      }
+                    );
+                  });
+                }
+              });
+            })();
           } else {
-            let userid = user.id;
-            // insert into transactions
-            sql = `INSERT INTO transactions (serverid, value, description)
+            // try tagged user
+            sql = `SELECT emoji FROM users WHERE userid = ? AND serverid = ? AND status = 1`;
+            result = await db.get(sql, [user.id, interaction.guildId]);
+            if (!result) {
+              interaction.editReply({
+                embeds: [
+                  {
+                    description: `<@!${user.id}> is not an active user. Use /setuser to register a new user.`,
+                  },
+                ],
+              });
+            } else if (user.id === interaction.user.id) {
+              interaction.editReply({
+                embeds: [
+                  {
+                    description: `Invalid action: you cannot log a payment to yourself.`,
+                  },
+                ],
+              });
+            } else {
+              let userid = user.id;
+              // insert into transactions
+              sql = `INSERT INTO transactions (serverid, value, description)
                                 VALUES (?, ?, "defaultPaidDescription")`;
-            db.run(sql, [interaction.guildId, cost]).then(() => {
-              db.run("SELECT last_insert_rowid()").then((transactionid) => {
-                sql = `INSERT INTO transactionhands (serverid, transactionid, owner, recipient)
+              db.run(sql, [interaction.guildId, cost]).then(() => {
+                db.run("SELECT last_insert_rowid()").then((transactionid) => {
+                  sql = `INSERT INTO transactionhands (serverid, transactionid, owner, recipient)
                                         VALUES (?, ?, ?, ?);`;
-                db.run(sql, [
-                  interaction.guildId,
-                  transactionid.lastID,
-                  interaction.user.id,
-                  userid,
-                ]).then(() => {
-                  updateLog(interaction.guild);
+                  db.run(sql, [
+                    interaction.guildId,
+                    transactionid.lastID,
+                    interaction.user.id,
+                    userid,
+                  ]).then(() => {
+                    updateLog(interaction.guild);
+                  });
                 });
               });
-            });
-            confirmPayment(
-              interaction,
-              interaction.user.id,
-              userid,
-              result.emoji,
-              cost
-            );
+              confirmPayment(
+                interaction,
+                interaction.user.id,
+                userid,
+                result.emoji,
+                cost
+              );
+            }
           }
+        } else {
+          interaction.editReply({
+            embeds: [
+              {
+                description: `\`/paid\` is a transaction command and can only be used within the set transactions channel, <#${validChannel}>`,
+              },
+            ],
+          });
         }
-      } else {
-        interaction.editReply({
-          embeds: [
-            {
-              description: `\`/paid\` is a transaction command and can only be used within the set transactions channel, <#${validChannel}>`,
-            },
-          ],
-        });
       }
     }
   },

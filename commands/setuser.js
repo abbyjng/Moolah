@@ -10,7 +10,7 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName("setuser")
     .setDescription(
-      "Adds a new user to the log database or changes their emoji if they are already registered."
+      "Adds a new user to the log database or changes their emoji if they are already active."
     )
     .addUserOption((option) =>
       option
