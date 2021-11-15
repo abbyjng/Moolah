@@ -124,12 +124,12 @@ client.on("emojiDelete", async function (emoji) {
   sql = `SELECT userid FROM users WHERE emoji = ? AND serverid = ?`;
   user = await db.get(sql, [`<:${emoji.name}:${emoji.id}>`, emoji.guild.id]);
   if (user) {
-    // delete user from the table, add to deleted users
-    db.run(`UPDATE users SET status = 0 WHERE userid = ? AND serverid = ?;`, [
+    // update emoji to default ⬜
+    db.run(`UPDATE users SET emoji = '⬜' WHERE userid = ? AND serverid = ?;`, [
       user.userid,
       emoji.guild.id,
     ]).then(() => {
-      // update log embed without the user
+      // update log embed
       updateLog(emoji.guild);
     });
 
@@ -140,7 +140,7 @@ client.on("emojiDelete", async function (emoji) {
     if (s.alertsids) {
       defaultChannel = emoji.guild.channels.cache.get(s.alertsid);
     } else {
-      channel.guild.channels.cache.forEach((channel) => {
+      emoji.guild.channels.cache.forEach((channel) => {
         if (channel.type == "GUILD_TEXT" && defaultChannel == "") {
           if (
             channel
@@ -162,7 +162,7 @@ client.on("emojiDelete", async function (emoji) {
           title: `‼️ WARNING ‼️`,
           color: 0xff0000,
           description: `The emoji previously called :${emoji.name}: was deleted.
-            This emoji was connected to <@!${user.userid}>. Please assign a new emoji to <@!${user.userid}>. Until this is done, this user will be removed from the database.`,
+            This emoji was connected to <@!${user.userid}>. Please assign a new emoji to <@!${user.userid}>. Until this is done, the user will be registered with ⬜.`,
         },
       ],
     });

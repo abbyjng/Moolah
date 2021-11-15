@@ -33,17 +33,3 @@ CREATE TABLE IF NOT EXISTS transactionhands(
     FOREIGN KEY (serverid) REFERENCES servers(serverid) ON UPDATE CASCADE ON DELETE CASCADE
     FOREIGN KEY (transactionid) REFERENCES transactions(transactionid) ON UPDATE CASCADE ON DELETE CASCADE
 );
-
-CREATE TABLE IF NOT EXISTS reminders(
-    serverid TEXT NOT NULL,
-    message TEXT NOT NULL,
-    time DATETIME NOT NULL,
-    FOREIGN KEY (serverid) REFERENCES servers(serverid) ON UPDATE CASCADE ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS shoppinglists(
-    serverid TEXT NOT NULL,
-    item TEXT NOT NULL,
-    ownerid TEXT NOT NULL,
-    FOREIGN KEY (serverid) REFERENCES servers(serverid) ON UPDATE CASCADE ON DELETE CASCADE
-);
