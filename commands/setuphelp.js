@@ -34,6 +34,10 @@ module.exports = {
               value: `Removes a user from active status within the bot. This will still prevent other users from adding new transactions involving this user, but will leave the user's older transactions within the history log. The input should mention the user using the @ functionality.\n----------`,
             },
             {
+              name: `/deleteuser [@user]`,
+              value: `Deletes a user from the database. This will erase the user and all of their transactions from the database entirely. The input should mention the user using the @ functionality.\n----------`,
+            },
+            {
               name: `/userlist`,
               value: `Displays a list of all active users.\n----------`,
             },

@@ -18,8 +18,8 @@ module.exports = {
               value: `Logs a transaction with the value given in the first input. Moolah will follow up this command with an embed listing all the information from the command and emoji reactions to allow the user to pick which users their purchase was for. The optional description appears only in the \`/history\` command as a log of what the purchase was for.\n----------`,
             },
             {
-              name: `/paid [money value] *[@user being paid]*`,
-              value: `Logs a payment of the value given in the first input. User may tag the other person in their command to expediate the process. Otherwise, Moolah will follow up this command with an embed listing all the information from the command and emoji reactions to allow the user to pick which user their payment was to.\n----------`,
+              name: `/paid {all: [@user being paid] | value: [money value] *[@user being paid]*}`,
+              value: `Logs a payment. If the 'all' path is chosen, all dues from the user to the recipient will be paid. User must tag the recipient. If the 'value' path is chosen, user must include a value of how much they have paid. User may tag the other person in their command to expediate the process. Otherwise, Moolah will follow up this command with an embed listing all the information from the command and emoji reactions to allow the user to pick which user their payment was to.\n----------`,
             },
             {
               name: `/owe [money value] *[@user owed to]*`,

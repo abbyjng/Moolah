@@ -9,6 +9,7 @@ let desc = `- All of these commands are slash commands; utilize the autofill and
 let setupCmds = `/help
 /setuser [@user] [emoji]
 /removeuser [@user]
+/deleteuser [@user]
 /userlist
 /setchannel {transactions | log | alerts} [#channel]
 /clearchannel {transactions | log | alerts}
@@ -17,7 +18,7 @@ let setupCmds = `/help
 For more information on these commands, use \`/setupHelp\`.`;
 
 let moneyCmds = `/bought [money value] *[description]*
-/paid [money value] *[@user being paid]*
+/paid {all: [user being paid] | value: [money value] *[@user being paid]*}
 /owe [money value] *[@user owed to]* *[description]*
 /log
 /history
