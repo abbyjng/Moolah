@@ -5,12 +5,12 @@ const { updateLog } = require("./../logHandler.js");
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName("removeuser")
-    .setDescription("Removes a user from the active userlist.")
+    .setName("deleteuser")
+    .setDescription("Deletes a user from the database.")
     .addUserOption((option) =>
       option
         .setName("user")
-        .setDescription("The user to be removed")
+        .setDescription("The user to be deleted")
         .setRequired(true)
     ),
   async execute(interaction) {
@@ -19,13 +19,13 @@ module.exports = {
     let db = await openDb();
     const user = interaction.options.getUser("user");
 
-    sql = `SELECT userid FROM users WHERE userid = ? AND serverid = ? AND status = 1`;
+    sql = `SELECT userid FROM users WHERE userid = ? AND serverid = ?`;
     result = await db.get(sql, [user.id, interaction.guildId]);
     if (!result) {
       interaction.editReply({
         embeds: [
           {
-            description: `User could not be removed. <@!${user.id}> is not currently active.`,
+            description: `User could not be deleted. <@!${user.id}> is not currently in the database.`,
           },
         ],
       });
@@ -33,9 +33,9 @@ module.exports = {
       emojis = ["❌", "✅"];
 
       let embed = new Discord.MessageEmbed()
-        .setTitle(`Remove this user?`)
+        .setTitle(`Delete this user?`)
         .setDescription(
-          `Removing user <@!${user.id}> will remove them from the list of active users and not allow them to create new transactions. They will still appear in the transaction log.\n`
+          `Deleting user <@!${user.id}> will delete them from the database. All transactions involving their user will be removed. Please consider using \`/removeuser\` if you only want to deactive this user.\n`
         )
         .setFooter(`React with ✅ to confirm or ❌ to cancel this action.`);
       interaction.editReply({ embeds: [embed] }).then((m) => {
@@ -70,7 +70,7 @@ module.exports = {
             interaction.editReply({
               embeds: [
                 {
-                  description: `Action timed out - user <@!${user.id}> has not been removed.`,
+                  description: `Action timed out - user <@!${user.id}> has not been deleted.`,
                   color: 0xff0000,
                 },
               ],
@@ -79,7 +79,7 @@ module.exports = {
             interaction.editReply({
               embeds: [
                 {
-                  description: `Action cancelled - user <@!${user.id}> has not been removed.`,
+                  description: `Action cancelled - user <@!${user.id}> has not been deleted.`,
                   color: 0xff0000,
                 },
               ],
@@ -88,15 +88,15 @@ module.exports = {
             interaction.editReply({
               embeds: [
                 {
-                  description: `User <@!${user.id}> removed successfully.`,
+                  description: `User <@!${user.id}> deleted successfully.`,
                   color: 0x00ff00,
                 },
               ],
             });
-            db.run(
-              `UPDATE users SET status = 0 WHERE userid = ? AND serverid = ?;`,
-              [user.id, interaction.guildId]
-            ).then(() => {
+            db.run(`DELETE FROM users WHERE userid = ? AND serverid = ?;`, [
+              user.id,
+              interaction.guildId,
+            ]).then(() => {
               updateLog(interaction.guild);
             });
           }

@@ -36,10 +36,10 @@ module.exports = {
         value: activeFormUsers.slice(0, -1) || `No users set.`,
       },
     ];
-    if (inactiveUsers) {
+    if (inactiveUsers.length != 0) {
       fields.push({
         name: `Inactive users`,
-        value: inactiveFormUsers.slice(0, -1) || `n/a`,
+        value: inactiveFormUsers.slice(0, -1),
       });
     }
     interaction.reply({

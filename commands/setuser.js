@@ -47,7 +47,7 @@ module.exports = {
         ],
       });
     } else {
-      sql = `SELECT userid FROM users WHERE emoji = ? AND serverid = ?`;
+      sql = `SELECT userid FROM users WHERE emoji = ? AND serverid = ? AND status = 1`;
       result = await db.get(sql, [emojiStr, interaction.guildId]);
       if (result) {
         interaction.reply({
