@@ -10,24 +10,42 @@ module.exports = {
   async execute(interaction) {
     let db = await openDb();
     sql = `SELECT userid, emoji FROM users WHERE serverid = ? AND status = 1`;
-    users = await db.all(sql, [interaction.guildId]);
+    activeUsers = await db.all(sql, [interaction.guildId]);
+    sql = `SELECT userid, emoji FROM users WHERE serverid = ? AND status = 0`;
+    inactiveUsers = await db.all(sql, [interaction.guildId]);
 
-    formUsers = "";
-    users.forEach((row) => {
+    activeFormUsers = "";
+    activeUsers.forEach((row) => {
       if (row.userid !== interaction.client.id) {
-        formUsers += `${row.emoji} → `;
-        formUsers += `<@!${row.userid}>\n`;
+        activeFormUsers += `${row.emoji} → `;
+        activeFormUsers += `<@!${row.userid}>\n`;
       }
     });
+
+    inactiveFormUsers = "";
+    inactiveUsers.forEach((row) => {
+      if (row.userid !== interaction.client.id) {
+        inactiveFormUsers += `${row.emoji} → `;
+        inactiveFormUsers += `<@!${row.userid}>\n`;
+      }
+    });
+
+    fields = [
+      {
+        name: `Active users`,
+        value: activeFormUsers.slice(0, -1) || `No users set.`,
+      },
+    ];
+    if (inactiveUsers) {
+      fields.push({
+        name: `Inactive users`,
+        value: inactiveFormUsers.slice(0, -1) || `n/a`,
+      });
+    }
     interaction.reply({
       embeds: [
         {
-          fields: [
-            {
-              name: `User list`,
-              value: formUsers.slice(0, -1) || `No users set.`,
-            },
-          ],
+          fields: fields,
         },
       ],
     });
