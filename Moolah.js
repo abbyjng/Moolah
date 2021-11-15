@@ -2,8 +2,8 @@ const { Client, Collection, Intents, Permissions } = require("discord.js");
 const auth = require("./auth.json");
 const fs = require("fs");
 
-const { openDb } = require("./databaseHandler.js");
-const { updateLog } = require("./logHandler.js");
+const { openDb } = require("./handlers/databaseHandler.js");
+const { updateLog } = require("./handlers/logHandler.js");
 
 let db;
 

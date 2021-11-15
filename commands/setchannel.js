@@ -1,7 +1,7 @@
 const { Permissions } = require("discord.js");
 const { SlashCommandBuilder } = require("@discordjs/builders");
-const { openDb } = require("./../databaseHandler.js");
-const { updateLog } = require("./../logHandler.js");
+const { openDb } = require("./../handlers/databaseHandler.js");
+const { updateLog } = require("./../handlers/logHandler.js");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -28,7 +28,12 @@ module.exports = {
     const setChannel = interaction.options.getChannel("channel");
     if (
       setChannel.type == "GUILD_TEXT" &&
-      setChannel.permissionsFor(setChannel.guild.me).has(Permissions.FLAGS.SEND_MESSAGES) && setChannel.permissionsFor(setChannel.guild.me).has(Permissions.FLAGS.VIEW_CHANNEL)
+      setChannel
+        .permissionsFor(setChannel.guild.me)
+        .has(Permissions.FLAGS.SEND_MESSAGES) &&
+      setChannel
+        .permissionsFor(setChannel.guild.me)
+        .has(Permissions.FLAGS.VIEW_CHANNEL)
     ) {
       switch (channelType) {
         case "transactions":

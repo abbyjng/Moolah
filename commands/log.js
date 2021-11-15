@@ -1,6 +1,8 @@
 const { SlashCommandBuilder } = require("@discordjs/builders");
-const { getLogEmbeds } = require("./../logHandler.js");
-const { checkTransactionsChannel } = require("./../permissionHandler.js");
+const { getLogEmbeds } = require("./../handlers/logHandler.js");
+const {
+  checkTransactionsChannel,
+} = require("./../handlers/permissionHandler.js");
 
 let l = {};
 

@@ -1,11 +1,11 @@
 const Discord = require("discord.js");
 const { SlashCommandBuilder } = require("@discordjs/builders");
-const { openDb } = require("./../databaseHandler.js");
-const { updateLog } = require("./../logHandler.js");
+const { openDb } = require("./../handlers/databaseHandler.js");
+const { updateLog } = require("./../handlers/logHandler.js");
 const {
   checkValidUser,
   checkTransactionsChannel,
-} = require("./../permissionHandler.js");
+} = require("./../handlers/permissionHandler.js");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -153,9 +153,7 @@ async function handleDelete(
       )}\n`;
     } else if (transaction.value < 0) {
       // owe
-      descString += `<@!${recipients[0].owner}> owes ${
-        recipients[0].emoji
-      } `;
+      descString += `<@!${recipients[0].owner}> owes ${recipients[0].emoji} `;
       descString += `[$${(-transaction.value).toFixed(2)}] `;
       if (transaction.description) {
         descString += `"${transaction.description}" `;
@@ -214,7 +212,9 @@ async function handleDelete(
           interaction.editReply({
             embeds: [
               {
-                description: `Action timed out - transaction #${number + 1} has not been deleted.`,
+                description: `Action timed out - transaction #${
+                  number + 1
+                } has not been deleted.`,
                 color: 0xff0000,
               },
             ],
@@ -224,7 +224,9 @@ async function handleDelete(
           interaction.editReply({
             embeds: [
               {
-                description: `Action cancelled - transaction #${number + 1} has not been deleted.`,
+                description: `Action cancelled - transaction #${
+                  number + 1
+                } has not been deleted.`,
                 color: 0xff0000,
               },
             ],

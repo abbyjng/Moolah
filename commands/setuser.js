@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require("@discordjs/builders");
-const { openDb } = require("./../databaseHandler.js");
-const { updateLog } = require("./../logHandler.js");
+const { openDb } = require("./../handlers/databaseHandler.js");
+const { updateLog } = require("./../handlers/logHandler.js");
 const { MAX_USERS } = require("./../constants.js");
 
 const emojiRegex = require("emoji-regex/RGI_Emoji.js");

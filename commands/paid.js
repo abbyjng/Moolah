@@ -1,11 +1,11 @@
 const Discord = require("discord.js");
 const { SlashCommandBuilder } = require("@discordjs/builders");
-const { openDb } = require("./../databaseHandler.js");
-const { updateLog, getLogDict } = require("./../logHandler.js");
+const { openDb } = require("./../handlers/databaseHandler.js");
+const { updateLog, getLogDict } = require("./../handlers/logHandler.js");
 const {
   checkValidUser,
   checkTransactionsChannel,
-} = require("./../permissionHandler.js");
+} = require("./../handlers/permissionHandler.js");
 const { MAX_COST } = require("./../constants.js");
 
 const StatusEnum = Object.freeze({

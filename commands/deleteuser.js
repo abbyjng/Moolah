@@ -1,7 +1,7 @@
 const Discord = require("discord.js");
 const { SlashCommandBuilder } = require("@discordjs/builders");
-const { openDb } = require("./../databaseHandler.js");
-const { updateLog } = require("./../logHandler.js");
+const { openDb } = require("./../handlers/databaseHandler.js");
+const { updateLog } = require("./../handlers/logHandler.js");
 
 module.exports = {
   data: new SlashCommandBuilder()

@@ -1,7 +1,9 @@
 const Discord = require("discord.js");
 const { SlashCommandBuilder } = require("@discordjs/builders");
-const { openDb } = require("./../databaseHandler.js");
-const { checkTransactionsChannel } = require("./../permissionHandler.js");
+const { openDb } = require("./../handlers/databaseHandler.js");
+const {
+  checkTransactionsChannel,
+} = require("./../handlers/permissionHandler.js");
 
 let l = {};
 

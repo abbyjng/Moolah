@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require("@discordjs/builders");
-const { openDb } = require("./../databaseHandler.js");
+const { openDb } = require("./../handlers/databaseHandler.js");
 
 module.exports = {
   data: new SlashCommandBuilder()
