@@ -23,7 +23,7 @@ module.exports = {
       interaction.editReply({
         embeds: [
           {
-            description: `\`/history\` is a transaction command and can only be used within the set transactions channel, <#${validChannel}>`,
+            description: `\`/log\` is a transaction command and can only be used within the set transactions channel, <#${validChannel}>`,
           },
         ],
       });

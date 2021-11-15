@@ -5,6 +5,7 @@ let db;
 module.exports = {
   updateLog,
   getLogEmbeds,
+  getLogDict,
 };
 
 async function updateLog(server, newchannel = "") {
@@ -56,15 +57,6 @@ async function getLogEmbeds(server) {
       var description = ``;
       users.forEach((user) => {
         description += `<@!${user.userid}>: ${user.emoji}\n`;
-        log[user.userid] = {};
-        users.forEach((otherUser) => {
-          if (otherUser.userid != user.userid) {
-            log[user.userid][otherUser.userid] = {
-              value: 0,
-              emoji: otherUser.emoji,
-            };
-          }
-        });
       });
 
       var titleEmbed = {};
@@ -73,44 +65,7 @@ async function getLogEmbeds(server) {
       titleEmbed.color = 0x2471a3;
       embeds.push(titleEmbed);
 
-      // get all transactions and handle them
-      sql = `SELECT
-                        owner,
-                        recipient,
-                        value
-                    FROM
-                        transactions as t 
-                        INNER JOIN 
-                        transactionhands as th
-                        ON t.transactionid = th.transactionid
-                    WHERE
-                        th.owner != th.recipient
-                        AND t.serverid = ?`;
-      db.all(sql, [server.id]).then((transactions) => {
-        transactions.forEach((t) => {
-          if (t.recipient in log) {
-            if (t.owner in log[t.recipient]) {
-              if (t.value < 0) {
-                let leftover = 0;
-                log[t.recipient][t.owner].value += t.value;
-                leftover = -log[t.recipient][t.owner].value;
-                if (leftover > 0) {
-                  log[t.owner][t.recipient].value += leftover;
-                  log[t.recipient][t.owner].value = 0;
-                }
-              } else {
-                let leftover = 0;
-                log[t.owner][t.recipient].value -= t.value;
-                leftover = -log[t.owner][t.recipient].value;
-                if (leftover > 0) {
-                  log[t.recipient][t.owner].value += leftover;
-                  log[t.owner][t.recipient].value = 0;
-                }
-              }
-            }
-          }
-        });
-
+      getLogDict(users, server.id).then((log) => {
         let numUsers = users.length;
         let usersPerEmbed = Math.floor(
           4096 / (21 + 6 + (14 + 54) * (numUsers - 1))
@@ -148,6 +103,62 @@ async function getLogEmbeds(server) {
 
         resolve(embeds);
       });
+    });
+  });
+}
+
+async function getLogDict(users, serverid) {
+  return new Promise((resolve, reject) => {
+    log = {};
+    users.forEach((user) => {
+      log[user.userid] = {};
+      users.forEach((otherUser) => {
+        if (otherUser.userid != user.userid) {
+          log[user.userid][otherUser.userid] = {
+            value: 0,
+            emoji: otherUser.emoji,
+          };
+        }
+      });
+    });
+    // get all transactions and handle them
+    sql = `SELECT
+              owner,
+              recipient,
+              value
+          FROM
+              transactions as t 
+              INNER JOIN 
+              transactionhands as th
+              ON t.transactionid = th.transactionid
+          WHERE
+              th.owner != th.recipient
+              AND t.serverid = ?`;
+    db.all(sql, [serverid]).then((transactions) => {
+      transactions.forEach((t) => {
+        if (t.recipient in log) {
+          if (t.owner in log[t.recipient]) {
+            if (t.value < 0) {
+              let leftover = 0;
+              log[t.recipient][t.owner].value += t.value;
+              leftover = -log[t.recipient][t.owner].value;
+              if (leftover > 0) {
+                log[t.owner][t.recipient].value += leftover;
+                log[t.recipient][t.owner].value = 0;
+              }
+            } else {
+              let leftover = 0;
+              log[t.owner][t.recipient].value -= t.value;
+              leftover = -log[t.owner][t.recipient].value;
+              if (leftover > 0) {
+                log[t.recipient][t.owner].value += leftover;
+                log[t.owner][t.recipient].value = 0;
+              }
+            }
+          }
+        }
+      });
+      resolve(log);
     });
   });
 }
