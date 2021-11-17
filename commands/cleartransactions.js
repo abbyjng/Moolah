@@ -6,6 +6,7 @@ const {
   checkValidUser,
   checkTransactionsChannel,
 } = require("./../handlers/permissionHandler.js");
+const { ERROR_COLOR, MOOLAH_COLOR, SUCCESS_COLOR } = require("../constants.js");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -40,6 +41,7 @@ module.exports = {
         })();
       } else {
         interaction.editReply({
+          color: ERROR_COLOR,
           embeds: [
             {
               description: `\`/cleartransactions\` is a transaction command and can only be used within the set transactions channel, <#${validChannel}>`,
@@ -56,6 +58,7 @@ async function handleClear(interaction, authorid) {
     emojis = ["❌", "✅"];
 
     embed = new Discord.MessageEmbed()
+      .setColor(MOOLAH_COLOR)
       .setDescription(
         `**Warning:** By confirming this action, all transactions logged in this server will be permanently deleted. Do you wish to continue?`
       )
@@ -94,7 +97,7 @@ async function handleClear(interaction, authorid) {
             embeds: [
               {
                 description: `Action timed out - transactions have not been cleared.`,
-                color: 0xff0000,
+                color: ERROR_COLOR,
               },
             ],
           });
@@ -104,7 +107,7 @@ async function handleClear(interaction, authorid) {
             embeds: [
               {
                 description: `Action cancelled - transactions have not been cleared.`,
-                color: 0xff0000,
+                color: ERROR_COLOR,
               },
             ],
           });
@@ -114,7 +117,7 @@ async function handleClear(interaction, authorid) {
             embeds: [
               {
                 description: `Transactions cleared successfully.`,
-                color: 0x00ff00,
+                color: SUCCESS_COLOR,
               },
             ],
           });

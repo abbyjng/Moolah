@@ -1,7 +1,7 @@
 const { SlashCommandBuilder } = require("@discordjs/builders");
 const { openDb } = require("./../handlers/databaseHandler.js");
 const { updateLog } = require("./../handlers/logHandler.js");
-const { MAX_USERS } = require("./../constants.js");
+const { MAX_USERS, ERROR_COLOR, SUCCESS_COLOR } = require("./../constants.js");
 
 const emojiRegex = require("emoji-regex/RGI_Emoji.js");
 const regex = emojiRegex();
@@ -34,6 +34,7 @@ module.exports = {
         embeds: [
           {
             description: `Emoji could not be set. ✅ is an invalid emoji, try something else.`,
+            color: ERROR_COLOR,
           },
         ],
       });
@@ -42,6 +43,7 @@ module.exports = {
         embeds: [
           {
             description: `Emoji could not be set. ❌ is an invalid emoji, try something else.`,
+            color: ERROR_COLOR,
           },
         ],
       });
@@ -50,6 +52,7 @@ module.exports = {
         embeds: [
           {
             description: `Emoji could not be set. ⬜ is an invalid emoji, try something else.`,
+            color: ERROR_COLOR,
           },
         ],
       });
@@ -68,6 +71,7 @@ module.exports = {
           embeds: [
             {
               description: `User could not be set. ${MAX_USERS} users have already been set in this server. You can delete users by running \`/deleteuser\`.`,
+              color: ERROR_COLOR,
             },
           ],
         });
@@ -79,6 +83,7 @@ module.exports = {
             embeds: [
               {
                 description: `Emoji could not be set. ${emojiStr} has already been assigned to <@${result.userid}>.`,
+                color: ERROR_COLOR,
               },
             ],
           });
@@ -96,6 +101,7 @@ module.exports = {
                 embeds: [
                   {
                     description: `Emoji could not be set. Emojis must be default or available in this server.`,
+                    color: ERROR_COLOR,
                   },
                 ],
               });
@@ -109,6 +115,7 @@ module.exports = {
                 embeds: [
                   {
                     description: `User <@!${user.id}> successfully set to ${emojiStr}.`,
+                    color: SUCCESS_COLOR,
                   },
                 ],
               });
@@ -119,6 +126,7 @@ module.exports = {
               embeds: [
                 {
                   description: `Emoji could not be set. \`${emojiStr}\` is an invalid emoji.`,
+                  color: ERROR_COLOR,
                 },
               ],
             });
@@ -133,6 +141,7 @@ module.exports = {
               embeds: [
                 {
                   description: `User <@!${user.id}> successfully set to ${emojiStr}.`,
+                  color: SUCCESS_COLOR,
                 },
               ],
             });

@@ -2,6 +2,7 @@ const Discord = require("discord.js");
 const { SlashCommandBuilder } = require("@discordjs/builders");
 const { openDb } = require("./../handlers/databaseHandler.js");
 const { updateLog } = require("./../handlers/logHandler.js");
+const { ERROR_COLOR, MOOLAH_COLOR, SUCCESS_COLOR } = require("../constants.js");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -25,6 +26,7 @@ module.exports = {
       interaction.editReply({
         embeds: [
           {
+            color: ERROR_COLOR,
             description: `User could not be deleted. <@!${user.id}> is not currently in the database.`,
           },
         ],
@@ -34,6 +36,7 @@ module.exports = {
 
       let embed = new Discord.MessageEmbed()
         .setTitle(`Delete this user?`)
+        .setColor(MOOLAH_COLOR)
         .setDescription(
           `Deleting user <@!${user.id}> will delete them from the database. All transactions involving their user will be removed. Please consider using \`/removeuser\` if you only want to deactive this user.\n`
         )
@@ -71,7 +74,7 @@ module.exports = {
               embeds: [
                 {
                   description: `Action timed out - user <@!${user.id}> has not been deleted.`,
-                  color: 0xff0000,
+                  color: ERROR_COLOR,
                 },
               ],
             });
@@ -80,7 +83,7 @@ module.exports = {
               embeds: [
                 {
                   description: `Action cancelled - user <@!${user.id}> has not been deleted.`,
-                  color: 0xff0000,
+                  color: ERROR_COLOR,
                 },
               ],
             });
@@ -89,7 +92,7 @@ module.exports = {
               embeds: [
                 {
                   description: `User <@!${user.id}> deleted successfully.`,
-                  color: 0x00ff00,
+                  color: SUCCESS_COLOR,
                 },
               ],
             });

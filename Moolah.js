@@ -4,6 +4,7 @@ const fs = require("fs");
 
 const { openDb } = require("./handlers/databaseHandler.js");
 const { updateLog } = require("./handlers/logHandler.js");
+const { MOOLAH_COLOR, ERROR_COLOR } = require("./constants.js");
 
 let db;
 
@@ -106,7 +107,7 @@ client.on("guildCreate", async function (server) {
         thumbnail: {
           url: "https://i.ibb.co/vZyf66y/Moolah-Logo.png",
         },
-        color: 0x2471a3,
+        color: MOOLAH_COLOR,
         description:
           "I use slash commands, so the prefix for all my commands is '/', e.g: '/help'.\nUse the command /help to see a list of all my commands.",
         footer: { text: "Moolah created and developed by beexng#2380." },
@@ -160,7 +161,7 @@ client.on("emojiDelete", async function (emoji) {
       embeds: [
         {
           title: `‼️ WARNING ‼️`,
-          color: 0xff0000,
+          color: ERROR_COLOR,
           description: `The emoji previously called :${emoji.name}: was deleted.
             This emoji was connected to <@!${user.userid}>. Please assign a new emoji to <@!${user.userid}>. Until this is done, the user will be registered with ⬜.`,
         },
@@ -244,7 +245,7 @@ client.on("channelDelete", async function (channel) {
       embeds: [
         {
           title: `‼️ WARNING ‼️`,
-          color: 0xff0000,
+          color: ERROR_COLOR,
           description: `The channel previously set as the ${ch} channel has been deleted. This channel has been unset.`,
         },
       ],
@@ -322,7 +323,7 @@ client.on("channelUpdate", async function (oldChannel, newChannel) {
         embeds: [
           {
             title: `‼️ WARNING ‼️`,
-            color: 0xff0000,
+            color: ERROR_COLOR,
             description: `The channel previously set as the ${ch} channel has been changed so that Moolah no longer can access it. This channel has been unset.`,
           },
         ],
@@ -362,7 +363,7 @@ client.on("messageDelete", async function (message) {
           embeds: [
             {
               title: `⚠️ WARNING ⚠️`,
-              color: 0xffff00,
+              color: WARNING_COLOR,
               description: `Did you mean to delete the log message? If you wish to unset the log channel, send \`/clearchannel log\`.`,
             },
           ],
@@ -414,7 +415,7 @@ client.on("guildMemberRemove", async function (member) {
       embeds: [
         {
           title: `‼️ WARNING ‼️`,
-          color: 0xff0000,
+          color: ERROR_COLOR,
           description: `The user <@!${member.id}> has left this server. They have been removed from the database.`,
         },
       ],

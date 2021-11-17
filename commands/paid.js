@@ -6,7 +6,12 @@ const {
   checkValidUser,
   checkTransactionsChannel,
 } = require("./../handlers/permissionHandler.js");
-const { MAX_COST } = require("./../constants.js");
+const {
+  MAX_COST,
+  ERROR_COLOR,
+  MOOLAH_COLOR,
+  SUCCESS_COLOR,
+} = require("./../constants.js");
 
 const StatusEnum = Object.freeze({
   WORKING: 1,
@@ -78,6 +83,7 @@ module.exports = {
             interaction.editReply({
               embeds: [
                 {
+                  color: ERROR_COLOR,
                   description: `Invalid action: you cannot log a payment to yourself.`,
                 },
               ],
@@ -89,6 +95,7 @@ module.exports = {
             interaction.editReply({
               embeds: [
                 {
+                  color: ERROR_COLOR,
                   description: `Invalid action: you do not owe <@!${user.id}> anything.`,
                 },
               ],
@@ -99,6 +106,7 @@ module.exports = {
           interaction.editReply({
             embeds: [
               {
+                color: ERROR_COLOR,
                 description: `<@!${user.id}> is not an active user. Use /setuser to register a new user.`,
               },
             ],
@@ -117,6 +125,7 @@ module.exports = {
             interaction.editReply({
               embeds: [
                 {
+                  color: ERROR_COLOR,
                   description: `Invalid command usage: the value submitted must be a positive value.`,
                 },
               ],
@@ -125,6 +134,7 @@ module.exports = {
             interaction.editReply({
               embeds: [
                 {
+                  color: ERROR_COLOR,
                   description: `Invalid command usage: the value submitted must be less than ${MAX_COST}.`,
                 },
               ],
@@ -171,6 +181,7 @@ module.exports = {
               interaction.editReply({
                 embeds: [
                   {
+                    color: ERROR_COLOR,
                     description: `<@!${user.id}> is not an active user. Use /setuser to register a new user.`,
                   },
                 ],
@@ -179,6 +190,7 @@ module.exports = {
               interaction.editReply({
                 embeds: [
                   {
+                    color: ERROR_COLOR,
                     description: `Invalid action: you cannot log a payment to yourself.`,
                   },
                 ],
@@ -215,6 +227,7 @@ module.exports = {
           interaction.editReply({
             embeds: [
               {
+                color: ERROR_COLOR,
                 description: `\`/paid\` is a transaction command and can only be used within the set transactions channel, <#${validChannel}>`,
               },
             ],
@@ -243,12 +256,15 @@ async function handlePayment(interaction, authorid, users, strUsers, value) {
       status: StatusEnum.WORKING,
     };
 
-    embed = new Discord.MessageEmbed().setTitle(`New payment...`).addFields({
-      name: `Select the recipient of this payment of $${parseFloat(
-        value
-      ).toFixed(2)}:`,
-      value: strUsers,
-    });
+    embed = new Discord.MessageEmbed()
+      .setTitle(`New payment...`)
+      .addFields({
+        name: `Select the recipient of this payment of $${parseFloat(
+          value
+        ).toFixed(2)}:`,
+        value: strUsers,
+      })
+      .setColor(MOOLAH_COLOR);
     interaction.editReply({ embeds: [embed] }).then((m) => {
       t[(m.createdAt, authorid)] = info;
 
@@ -343,7 +359,7 @@ function confirmPayment(interaction, ownerid, userid, emoji, value) {
     embeds: [
       {
         title: `Transaction added!`,
-        color: 0x00ff00,
+        color: SUCCESS_COLOR,
         description: `<@!${ownerid}> paid **$${parseFloat(value).toFixed(
           2
         )}** to ${emoji}<@!${userid}>`,
@@ -357,7 +373,7 @@ function transactionCancelled(interaction) {
     embeds: [
       {
         description: `Transaction was cancelled.`,
-        color: 0xff0000,
+        color: ERROR_COLOR,
       },
     ],
   });
@@ -368,7 +384,7 @@ function transactionTimedOut(interaction) {
     embeds: [
       {
         description: `Transaction timed out after 2 minutes.`,
-        color: 0xff0000,
+        color: ERROR_COLOR,
       },
     ],
   });

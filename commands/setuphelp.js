@@ -1,4 +1,5 @@
 const { SlashCommandBuilder } = require("@discordjs/builders");
+const { MOOLAH_COLOR } = require("../constants");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -11,7 +12,7 @@ module.exports = {
       embeds: [
         {
           title: `:gear: My setup commands: :wrench:`,
-          color: 0x2471a3,
+          color: MOOLAH_COLOR,
           fields: [
             {
               name: `/help`,

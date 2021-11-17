@@ -6,6 +6,7 @@ const {
   checkValidUser,
   checkTransactionsChannel,
 } = require("./../handlers/permissionHandler.js");
+const { ERROR_COLOR, MOOLAH_COLOR, SUCCESS_COLOR } = require("../constants.js");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -66,6 +67,7 @@ module.exports = {
           interaction.editReply({
             embeds: [
               {
+                color: ERROR_COLOR,
                 description: `Invalid command usage: the value submitted must be a positive value.`,
               },
             ],
@@ -74,6 +76,7 @@ module.exports = {
           interaction.editReply({
             embeds: [
               {
+                color: ERROR_COLOR,
                 description: `Invalid command usage: ${num} is not a valid transaction number.`,
               },
             ],
@@ -126,6 +129,7 @@ module.exports = {
         interaction.editReply({
           embeds: [
             {
+              color: ERROR_COLOR,
               description: `\`/delete\` is a transaction command and can only be used within the set transactions channel, <#${validChannel}>`,
             },
           ],
@@ -177,6 +181,7 @@ async function handleDelete(
 
     embed = new Discord.MessageEmbed()
       .setTitle(`Delete this transaction?`)
+      .setColor(MOOLAH_COLOR)
       .setDescription(descString)
       .setFooter(`React with ✅ to confirm or ❌ to cancel this action.`);
     interaction.editReply({ embeds: [embed] }).then((m) => {
@@ -215,7 +220,7 @@ async function handleDelete(
                 description: `Action timed out - transaction #${
                   number + 1
                 } has not been deleted.`,
-                color: 0xff0000,
+                color: ERROR_COLOR,
               },
             ],
           });
@@ -227,7 +232,7 @@ async function handleDelete(
                 description: `Action cancelled - transaction #${
                   number + 1
                 } has not been deleted.`,
-                color: 0xff0000,
+                color: ERROR_COLOR,
               },
             ],
           });
@@ -237,7 +242,7 @@ async function handleDelete(
             embeds: [
               {
                 description: `Transaction #${number + 1} deleted successfully.`,
-                color: 0x00ff00,
+                color: SUCCESS_COLOR,
               },
             ],
           });

@@ -6,7 +6,13 @@ const {
   checkValidUser,
   checkTransactionsChannel,
 } = require("./../handlers/permissionHandler.js");
-const { MAX_DESCRIPTION, MAX_COST } = require("./../constants.js");
+const {
+  MAX_DESCRIPTION,
+  MAX_COST,
+  MOOLAH_COLOR,
+  ERROR_COLOR,
+  SUCCESS_COLOR,
+} = require("./../constants.js");
 
 const StatusEnum = Object.freeze({
   WORKING: 1,
@@ -54,6 +60,7 @@ module.exports = {
           interaction.editReply({
             embeds: [
               {
+                color: ERROR_COLOR,
                 description: `Invalid command usage: the value submitted must be a positive value.`,
               },
             ],
@@ -62,6 +69,7 @@ module.exports = {
           interaction.editReply({
             embeds: [
               {
+                color: ERROR_COLOR,
                 description: `Invalid command usage: the value submitted must be less than ${MAX_COST}.`,
               },
             ],
@@ -70,6 +78,7 @@ module.exports = {
           interaction.editReply({
             embeds: [
               {
+                color: ERROR_COLOR,
                 description: `Congrats! You've found the one description message you are not allowed to use. Please try again.`,
               },
             ],
@@ -78,6 +87,7 @@ module.exports = {
           interaction.editReply({
             embeds: [
               {
+                color: ERROR_COLOR,
                 description: `Invalid command usage: the description submitted must be <${MAX_DESCRIPTION} characters long.`,
               },
             ],
@@ -124,6 +134,7 @@ module.exports = {
         interaction.editReply({
           embeds: [
             {
+              color: ERROR_COLOR,
               description: `\`/bought\` is a transaction command and can only be used within the set transactions channel, <#${validChannel}>`,
             },
           ],
@@ -162,6 +173,7 @@ async function handleTransaction(
 
     embed = new Discord.MessageEmbed()
       .setTitle(`New transaction...`)
+      .setColor(MOOLAH_COLOR)
       .addFields(
         { name: `Select recipients of this transaction:`, value: strUsers },
         {
@@ -252,6 +264,7 @@ async function handleTransaction(
             });
             newEmbed = new Discord.MessageEmbed()
               .setTitle(`New transaction...`)
+              .setColor(MOOLAH_COLOR)
               .addFields(
                 {
                   name: `Select recipients of this transaction:`,
@@ -295,6 +308,7 @@ async function handleTransaction(
           });
           newEmbed = new Discord.MessageEmbed()
             .setTitle(`New transaction...`)
+            .setColor(MOOLAH_COLOR)
             .addFields(
               {
                 name: `Select recipients of this transaction:`,
@@ -394,7 +408,7 @@ function confirmTransaction(
     embeds: [
       {
         title: `Transaction added!`,
-        color: 0x00ff00,
+        color: SUCCESS_COLOR,
         description: msg,
       },
     ],
@@ -406,7 +420,7 @@ function transactionInvalid(interaction) {
     embeds: [
       {
         description: `Invalid input. You may not submit a transaction for only yourself.`,
-        color: 0xff0000,
+        color: ERROR_COLOR,
       },
     ],
   });
@@ -417,7 +431,7 @@ function transactionCancelled(interaction) {
     embeds: [
       {
         description: `Transaction was cancelled.`,
-        color: 0xff0000,
+        color: ERROR_COLOR,
       },
     ],
   });
@@ -428,7 +442,7 @@ function transactionTimedOut(interaction) {
     embeds: [
       {
         description: `Transaction timed out after 2 minutes.`,
-        color: 0xff0000,
+        color: ERROR_COLOR,
       },
     ],
   });

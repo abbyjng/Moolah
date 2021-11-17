@@ -1,4 +1,5 @@
 const { SlashCommandBuilder } = require("@discordjs/builders");
+const { MOOLAH_COLOR } = require("../constants");
 
 let desc = `- All of these commands are slash commands; utilize the autofill and input regulation to avoid misinputs.
 - Inputs within {} are literals - type the option which fits your need exactly.
@@ -36,7 +37,7 @@ module.exports = {
       embeds: [
         {
           title: `My commands:`,
-          color: 0x2471a3,
+          color: MOOLAH_COLOR,
           description: desc,
           fields: [
             {

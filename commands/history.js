@@ -4,6 +4,7 @@ const { openDb } = require("./../handlers/databaseHandler.js");
 const {
   checkTransactionsChannel,
 } = require("./../handlers/permissionHandler.js");
+const { ERROR_COLOR, MOOLAH_COLOR, SUCCESS_COLOR } = require("../constants.js");
 
 let l = {};
 
@@ -92,6 +93,7 @@ module.exports = {
       interaction.editReply({
         embeds: [
           {
+            color: ERROR_COLOR,
             description: `\`/history\` is a transaction command and can only be used within the set transactions channel, <#${validChannel}>`,
           },
         ],
@@ -103,6 +105,7 @@ module.exports = {
 function noTransactions(interaction) {
   embed = new Discord.MessageEmbed()
     .setTitle(`Transaction log`)
+    .setColor(MOOLAH_COLOR)
     .setDescription(`No transactions found.`);
   interaction.editReply({ embeds: [embed] });
 }
@@ -110,6 +113,7 @@ function noTransactions(interaction) {
 function handleLog(interaction, transactions, authorid, entriesPerScreen) {
   embed = new Discord.MessageEmbed()
     .setTitle(`Transaction log`)
+    .setColor(SUCCESS_COLOR)
     .setDescription(
       getLogMessage(
         transactions,
@@ -149,6 +153,7 @@ function handleLog(interaction, transactions, authorid, entriesPerScreen) {
           // go to the bottom of the list
           newEmbed = new Discord.MessageEmbed()
             .setTitle(`Transaction log`)
+            .setColor(SUCCESS_COLOR)
             .setDescription(
               getLogMessage(
                 transactions,
@@ -162,6 +167,7 @@ function handleLog(interaction, transactions, authorid, entriesPerScreen) {
           // go 10 down
           newEmbed = new Discord.MessageEmbed()
             .setTitle(`Transaction log`)
+            .setColor(SUCCESS_COLOR)
             .setDescription(
               getLogMessage(
                 transactions,
@@ -181,6 +187,7 @@ function handleLog(interaction, transactions, authorid, entriesPerScreen) {
           // go entriesPerScreen up
           newEmbed = new Discord.MessageEmbed()
             .setTitle(`Transaction log`)
+            .setColor(SUCCESS_COLOR)
             .setDescription(
               getLogMessage(
                 transactions,
@@ -197,6 +204,7 @@ function handleLog(interaction, transactions, authorid, entriesPerScreen) {
           // go to the top of the list
           newEmbed = new Discord.MessageEmbed()
             .setTitle(`Transaction log`)
+            .setColor(SUCCESS_COLOR)
             .setDescription(getLogMessage(transactions, 0, entriesPerScreen));
           m.edit({ embeds: [newEmbed] });
           l[(m.createdAt, authorid)] = 0;
@@ -219,6 +227,7 @@ function handleLog(interaction, transactions, authorid, entriesPerScreen) {
           );
         newEmbed = new Discord.MessageEmbed()
           .setTitle(`Transaction log -- Inactive`)
+          .setColor(MOOLAH_COLOR)
           .setDescription(
             getLogMessage(
               transactions,

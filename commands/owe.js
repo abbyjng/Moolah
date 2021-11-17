@@ -6,7 +6,13 @@ const {
   checkValidUser,
   checkTransactionsChannel,
 } = require("./../handlers/permissionHandler.js");
-const { MAX_DESCRIPTION, MAX_OWE } = require("./../constants.js");
+const {
+  MAX_DESCRIPTION,
+  MAX_OWE,
+  ERROR_COLOR,
+  MOOLAH_COLOR,
+  SUCCESS_COLOR,
+} = require("./../constants.js");
 
 const StatusEnum = Object.freeze({
   WORKING: 1,
@@ -58,6 +64,7 @@ module.exports = {
       if (!validChannel) {
         if (cost <= 0) {
           interaction.editReply({
+            color: ERROR_COLOR,
             embeds: [
               {
                 description: `Invalid command usage: the value submitted must be a positive value.`,
@@ -66,6 +73,7 @@ module.exports = {
           });
         } else if (cost >= MAX_OWE) {
           interaction.editReply({
+            color: ERROR_COLOR,
             embeds: [
               {
                 description: `Invalid command usage: the value submitted must be less than ${MAX_OWE}.`,
@@ -74,6 +82,7 @@ module.exports = {
           });
         } else if (description && description.length > MAX_DESCRIPTION) {
           interaction.editReply({
+            color: ERROR_COLOR,
             embeds: [
               {
                 description: `Invalid command usage: the description submitted must be <${MAX_DESCRIPTION} characters long.`,
@@ -123,6 +132,7 @@ module.exports = {
           result = await db.get(sql, [user.id, interaction.guildId]);
           if (!result) {
             interaction.editReply({
+              color: ERROR_COLOR,
               embeds: [
                 {
                   description: `<@!${user.id}> is not an active user. Use /setuser to register a new user.`,
@@ -131,6 +141,7 @@ module.exports = {
             });
           } else if (user.id === interaction.user.id) {
             interaction.editReply({
+              color: ERROR_COLOR,
               embeds: [
                 {
                   description: `Invalid action: you cannot log a debt to yourself.`,
@@ -168,6 +179,7 @@ module.exports = {
         }
       } else {
         interaction.editReply({
+          color: ERROR_COLOR,
           embeds: [
             {
               description: `\`/owe\` is a transaction command and can only be used within the set transactions channel, <#${validChannel}>`,
@@ -213,10 +225,13 @@ async function handleOwe(
     } else {
       msg += `:`;
     }
-    embed = new Discord.MessageEmbed().setTitle(`New debt...`).addFields({
-      name: msg,
-      value: strUsers,
-    });
+    embed = new Discord.MessageEmbed()
+      .setTitle(`New debt...`)
+      .addFields({
+        name: msg,
+        value: strUsers,
+      })
+      .setColor(MOOLAH_COLOR);
     interaction.editReply({ embeds: [embed] }).then((m) => {
       t[(m.createdAt, authorid)] = info;
 
@@ -328,7 +343,7 @@ function confirmDebt(interaction, ownerid, userid, emoji, value, description) {
     embeds: [
       {
         title: `Transaction added!`,
-        color: 0x00ff00,
+        color: SUCCESS_COLOR,
         description: msg,
       },
     ],
@@ -340,7 +355,7 @@ function transactionCancelled(interaction) {
     embeds: [
       {
         description: `Transaction was cancelled.`,
-        color: 0xff0000,
+        color: ERROR_COLOR,
       },
     ],
   });
@@ -351,7 +366,7 @@ function transactionTimedOut(interaction) {
     embeds: [
       {
         description: `Transaction timed out after 2 minutes.`,
-        color: 0xff0000,
+        color: ERROR_COLOR,
       },
     ],
   });

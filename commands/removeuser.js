@@ -2,6 +2,7 @@ const Discord = require("discord.js");
 const { SlashCommandBuilder } = require("@discordjs/builders");
 const { openDb } = require("./../handlers/databaseHandler.js");
 const { updateLog } = require("./../handlers/logHandler.js");
+const { ERROR_COLOR, MOOLAH_COLOR, SUCCESS_COLOR } = require("../constants.js");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -25,6 +26,7 @@ module.exports = {
       interaction.editReply({
         embeds: [
           {
+            color: ERROR_COLOR,
             description: `User could not be removed. <@!${user.id}> is not currently active.`,
           },
         ],
@@ -34,6 +36,7 @@ module.exports = {
 
       let embed = new Discord.MessageEmbed()
         .setTitle(`Remove this user?`)
+        .setColor(MOOLAH_COLOR)
         .setDescription(
           `Removing user <@!${user.id}> will remove them from the list of active users and not allow them to create new transactions. They will still appear in the transaction log.\n`
         )
@@ -71,7 +74,7 @@ module.exports = {
               embeds: [
                 {
                   description: `Action timed out - user <@!${user.id}> has not been removed.`,
-                  color: 0xff0000,
+                  color: ERROR_COLOR,
                 },
               ],
             });
@@ -80,7 +83,7 @@ module.exports = {
               embeds: [
                 {
                   description: `Action cancelled - user <@!${user.id}> has not been removed.`,
-                  color: 0xff0000,
+                  color: ERROR_COLOR,
                 },
               ],
             });
@@ -89,7 +92,7 @@ module.exports = {
               embeds: [
                 {
                   description: `User <@!${user.id}> removed successfully.`,
-                  color: 0x00ff00,
+                  color: SUCCESS_COLOR,
                 },
               ],
             });

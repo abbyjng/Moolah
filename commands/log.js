@@ -1,4 +1,5 @@
 const { SlashCommandBuilder } = require("@discordjs/builders");
+const { ERROR_COLOR } = require("../constants.js");
 const { getLogEmbeds } = require("./../handlers/logHandler.js");
 const {
   checkTransactionsChannel,
@@ -23,6 +24,7 @@ module.exports = {
       interaction.editReply({ embeds: await getLogEmbeds(interaction.guild) });
     } else {
       interaction.editReply({
+        color: ERROR_COLOR,
         embeds: [
           {
             description: `\`/log\` is a transaction command and can only be used within the set transactions channel, <#${validChannel}>`,

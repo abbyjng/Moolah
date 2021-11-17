@@ -1,6 +1,7 @@
 const Discord = require("discord.js");
 const { SlashCommandBuilder } = require("@discordjs/builders");
 const { openDb } = require("./../handlers/databaseHandler.js");
+const { SUCCESS_COLOR } = require("../constants.js");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -34,6 +35,7 @@ module.exports = {
       interaction.reply({
         embeds: [
           {
+            color: SUCCESS_COLOR,
             description: `The ${channelType} channel has been cleared successfully.`,
           },
         ],

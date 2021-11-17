@@ -1,4 +1,5 @@
 const { SlashCommandBuilder } = require("@discordjs/builders");
+const { MOOLAH_COLOR } = require("../constants.js");
 const { openDb } = require("./../handlers/databaseHandler.js");
 
 module.exports = {
@@ -21,6 +22,7 @@ module.exports = {
     interaction.reply({
       embeds: [
         {
+          color: MOOLAH_COLOR,
           fields: [
             {
               name: `Channel list`,

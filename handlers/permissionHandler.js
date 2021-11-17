@@ -1,3 +1,4 @@
+const { ERROR_COLOR } = require("../constants.js");
 const { openDb } = require("./databaseHandler.js");
 
 module.exports = {
@@ -22,6 +23,7 @@ async function checkValidUser(interaction) {
               embeds: [
                 {
                   description: `No users are set. Set up users using \`/setUser [@user] [emoji]\`.`,
+                  color: ERROR_COLOR,
                 },
               ],
             });
@@ -30,6 +32,7 @@ async function checkValidUser(interaction) {
               embeds: [
                 {
                   description: `This command may only be used by active users. Use /setuser to register a new user.`,
+                  color: ERROR_COLOR,
                 },
               ],
             });

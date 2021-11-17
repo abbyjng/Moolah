@@ -1,3 +1,4 @@
+const { MOOLAH_COLOR } = require("../constants.js");
 const { openDb } = require("./databaseHandler.js");
 
 let db;
@@ -62,7 +63,7 @@ async function getLogEmbeds(server) {
       var titleEmbed = {};
       titleEmbed.title = "Money log";
       titleEmbed.description = description;
-      titleEmbed.color = 0x2471a3;
+      titleEmbed.color = MOOLAH_COLOR;
       embeds.push(titleEmbed);
 
       getLogDict(users, server.id).then((log) => {
@@ -86,7 +87,7 @@ async function getLogEmbeds(server) {
           if (counter == usersPerEmbed - 1) {
             var subEmbed = {};
             subEmbed.description = value;
-            subEmbed.color = 0x2471a3;
+            subEmbed.color = MOOLAH_COLOR;
             embeds.push(subEmbed);
             counter = 0;
             value = "";
@@ -97,7 +98,7 @@ async function getLogEmbeds(server) {
         if (counter != 0) {
           subEmbed = {};
           subEmbed.description = value;
-          subEmbed.color = 0x2471a3;
+          subEmbed.color = MOOLAH_COLOR;
           embeds.push(subEmbed);
         }
 

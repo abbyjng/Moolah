@@ -2,6 +2,7 @@ const { Permissions } = require("discord.js");
 const { SlashCommandBuilder } = require("@discordjs/builders");
 const { openDb } = require("./../handlers/databaseHandler.js");
 const { updateLog } = require("./../handlers/logHandler.js");
+const { SUCCESS_COLOR, ERROR_COLOR } = require("../constants.js");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -43,6 +44,7 @@ module.exports = {
               embeds: [
                 {
                   description: `<#${setChannel.id}> has successfully been set as the transactions channel.`,
+                  color: SUCCESS_COLOR,
                 },
               ],
             });
@@ -56,6 +58,7 @@ module.exports = {
               embeds: [
                 {
                   description: `<#${setChannel.id}> has successfully been set as the money log channel.`,
+                  color: SUCCESS_COLOR,
                 },
               ],
             });
@@ -68,6 +71,7 @@ module.exports = {
               embeds: [
                 {
                   description: `<#${setChannel.id}> has successfully been set as the alerts channel.`,
+                  color: SUCCESS_COLOR,
                 },
               ],
             });
@@ -78,6 +82,7 @@ module.exports = {
             embeds: [
               {
                 description: `Invalid channel type. Valid types: \`transactions | log | alerts\``,
+                color: ERROR_COLOR,
               },
             ],
           });
@@ -87,6 +92,7 @@ module.exports = {
         embeds: [
           {
             description: `Channel could not be set. Make sure this bot has permissions to send messages in <#${setChannel.id}>`,
+            color: ERROR_COLOR,
           },
         ],
       });
