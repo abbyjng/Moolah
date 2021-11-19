@@ -1,4 +1,5 @@
 const Discord = require("discord.js");
+const { MessageActionRow, MessageButton } = require("discord.js");
 const { SlashCommandBuilder } = require("@discordjs/builders");
 const { openDb } = require("./../handlers/databaseHandler.js");
 const { updateLog } = require("./../handlers/logHandler.js");
@@ -32,79 +33,82 @@ module.exports = {
         ],
       });
     } else {
-      emojis = ["❌", "✅"];
+      const buttons = new MessageActionRow().addComponents(
+        new MessageButton()
+          .setCustomId("confirm")
+          .setLabel("Confirm")
+          .setStyle("SUCCESS"),
+        new MessageButton()
+          .setCustomId("cancel")
+          .setLabel("Cancel")
+          .setStyle("DANGER")
+      );
 
       let embed = new Discord.MessageEmbed()
         .setTitle(`Remove this user?`)
         .setColor(MOOLAH_COLOR)
         .setDescription(
           `Removing user <@!${user.id}> will remove them from the list of active users and not allow them to create new transactions. They will still appear in the transaction log.\n`
-        )
-        .setFooter(`React with ✅ to confirm or ❌ to cancel this action.`);
-      interaction.editReply({ embeds: [embed] }).then((m) => {
-        Promise.all([m.react("✅"), m.react("❌")]).catch((error) =>
-          console.error("One of the emojis failed to react:", error)
         );
+      interaction
+        .editReply({ embeds: [embed], components: [buttons] })
+        .then((m) => {
+          const filter = (i) => i.user.id === interaction.user.id;
 
-        const filter = (r, u) => {
-          return emojis.includes(r.emoji.name) && u.id !== m.author.id;
-        };
+          const collector = m.createMessageComponentCollector({
+            filter,
+            time: 120000,
+            dispose: true,
+          });
 
-        // collector lasts for 2 minutes before cancelling
-        const collector = m.createReactionCollector({
-          filter,
-          time: 120000,
-          dispose: true,
-        });
-
-        collector.on("collect", (r, u) => {
-          if (u.id === interaction.user.id) {
+          collector.on("collect", (i) => {
             collector.stop();
-          }
-        });
+          });
 
-        collector.on("end", (collected) => {
-          m.reactions
-            .removeAll()
-            .catch((error) =>
-              console.error("Failed to clear reactions: ", error)
-            );
-          if (collected.length === 0) {
-            interaction.editReply({
-              embeds: [
-                {
-                  description: `Action timed out - user <@!${user.id}> has not been removed.`,
-                  color: ERROR_COLOR,
-                },
-              ],
-            });
-          } else if (collected.keys().next().value === "❌") {
-            interaction.editReply({
-              embeds: [
-                {
-                  description: `Action cancelled - user <@!${user.id}> has not been removed.`,
-                  color: ERROR_COLOR,
-                },
-              ],
-            });
-          } else if (collected.keys().next().value === "✅") {
-            interaction.editReply({
-              embeds: [
-                {
-                  description: `User <@!${user.id}> removed successfully.`,
-                  color: SUCCESS_COLOR,
-                },
-              ],
-            });
-            db.run(
-              `UPDATE users SET status = 0 WHERE userid = ? AND serverid = ?;`,
-              [user.id, interaction.guildId]
-            ).then(() => {
-              updateLog(interaction.guild);
-            });
-          }
+          collector.on("end", (collected, reason) => {
+            if (reason === "time") {
+              interaction.editReply({
+                embeds: [
+                  {
+                    description: `Action timed out - user <@!${user.id}> has not been removed.`,
+                    color: ERROR_COLOR,
+                  },
+                ],
+                components: [],
+              });
+            } else if (
+              collected.entries().next().value[1].customId === "cancel"
+            ) {
+              interaction.editReply({
+                embeds: [
+                  {
+                    description: `Action cancelled - user <@!${user.id}> has not been removed.`,
+                    color: ERROR_COLOR,
+                  },
+                ],
+                components: [],
+              });
+            } else if (
+              collected.entries().next().value[1].customId === "confirm"
+            ) {
+              interaction.editReply({
+                embeds: [
+                  {
+                    description: `User <@!${user.id}> removed successfully.`,
+                    color: SUCCESS_COLOR,
+                  },
+                ],
+                components: [],
+              });
+              db.run(
+                `UPDATE users SET status = 0 WHERE userid = ? AND serverid = ?;`,
+                [user.id, interaction.guildId]
+              ).then(() => {
+                updateLog(interaction.guild);
+              });
+            }
+          });
         });
-      });
     }
   },
 };
