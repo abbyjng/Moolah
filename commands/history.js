@@ -1,10 +1,11 @@
 const Discord = require("discord.js");
+const { MessageActionRow, MessageButton } = require("discord.js");
 const { SlashCommandBuilder } = require("@discordjs/builders");
 const { openDb } = require("./../handlers/databaseHandler.js");
 const {
   checkTransactionsChannel,
 } = require("./../handlers/permissionHandler.js");
-const { ERROR_COLOR, MOOLAH_COLOR, SUCCESS_COLOR } = require("../constants.js");
+const { ERROR_COLOR, MOOLAH_COLOR } = require("../constants.js");
 
 let l = {};
 
@@ -111,9 +112,64 @@ function noTransactions(interaction) {
 }
 
 function handleLog(interaction, transactions, authorid, entriesPerScreen) {
+  const all_active_buttons = new MessageActionRow().addComponents(
+    new MessageButton()
+      .setCustomId("full_down")
+      .setEmoji("⏬")
+      .setStyle("SECONDARY"),
+    new MessageButton()
+      .setCustomId("down")
+      .setEmoji("⬇️")
+      .setStyle("SECONDARY"),
+    new MessageButton().setCustomId("up").setEmoji("⬆️").setStyle("SECONDARY"),
+    new MessageButton()
+      .setCustomId("full_up")
+      .setEmoji("⏫")
+      .setStyle("SECONDARY")
+  );
+
+  const top_buttons = new MessageActionRow().addComponents(
+    new MessageButton()
+      .setCustomId("full_down")
+      .setEmoji("⏬")
+      .setStyle("SECONDARY"),
+    new MessageButton()
+      .setCustomId("down")
+      .setEmoji("⬇️")
+      .setStyle("SECONDARY"),
+    new MessageButton()
+      .setCustomId("up")
+      .setEmoji("⬆️")
+      .setStyle("SECONDARY")
+      .setDisabled(true),
+    new MessageButton()
+      .setCustomId("full_up")
+      .setEmoji("⏫")
+      .setStyle("SECONDARY")
+      .setDisabled(true)
+  );
+
+  const bottom_buttons = new MessageActionRow().addComponents(
+    new MessageButton()
+      .setCustomId("full_down")
+      .setEmoji("⏬")
+      .setStyle("SECONDARY")
+      .setDisabled(true),
+    new MessageButton()
+      .setCustomId("down")
+      .setEmoji("⬇️")
+      .setStyle("SECONDARY")
+      .setDisabled(true),
+    new MessageButton().setCustomId("up").setEmoji("⬆️").setStyle("SECONDARY"),
+    new MessageButton()
+      .setCustomId("full_up")
+      .setEmoji("⏫")
+      .setStyle("SECONDARY")
+  );
+
   embed = new Discord.MessageEmbed()
     .setTitle(`Transaction log`)
-    .setColor(SUCCESS_COLOR)
+    .setColor(MOOLAH_COLOR)
     .setDescription(
       getLogMessage(
         transactions,
@@ -121,39 +177,25 @@ function handleLog(interaction, transactions, authorid, entriesPerScreen) {
         entriesPerScreen
       )
     );
-  interaction.editReply({ embeds: [embed] }).then((m) => {
-    l[(m.createdAt, authorid)] = transactions.length - entriesPerScreen;
-
-    if (transactions.length > entriesPerScreen) {
-      Promise.all([
-        m.react("⏬"),
-        m.react("⬇️"),
-        m.react("⬆️"),
-        m.react("⏫"),
-      ]).catch((error) =>
-        console.error("One of the emojis failed to react:", error)
-      );
-
-      const filter = (reaction, user) => {
-        return (
-          ["⏬", "⬇️", "⬆️", "⏫"].includes(reaction.emoji.name) &&
-          user.id !== m.author.id
-        );
-      };
+  interaction
+    .editReply({ embeds: [embed], components: [bottom_buttons] })
+    .then((m) => {
+      l[(m.createdAt, authorid)] = transactions.length - entriesPerScreen;
+      const filter = (i) => true;
 
       // collector lasts for 2 minutes
-      const collector = m.createReactionCollector({
+      const collector = m.createMessageComponentCollector({
         filter,
         time: 300000,
         dispose: true,
       });
 
-      function handleReaction(reaction) {
-        if (reaction.emoji.name === "⏬") {
+      function handleButton(button) {
+        if (button === "full_down") {
           // go to the bottom of the list
           newEmbed = new Discord.MessageEmbed()
             .setTitle(`Transaction log`)
-            .setColor(SUCCESS_COLOR)
+            .setColor(MOOLAH_COLOR)
             .setDescription(
               getLogMessage(
                 transactions,
@@ -161,13 +203,13 @@ function handleLog(interaction, transactions, authorid, entriesPerScreen) {
                 entriesPerScreen
               )
             );
-          m.edit({ embeds: [newEmbed] });
+          m.edit({ embeds: [newEmbed], components: [bottom_buttons] });
           l[(m.createdAt, authorid)] = transactions.length - entriesPerScreen;
-        } else if (reaction.emoji.name === "⬇️") {
+        } else if (button === "down") {
           // go 10 down
           newEmbed = new Discord.MessageEmbed()
             .setTitle(`Transaction log`)
-            .setColor(SUCCESS_COLOR)
+            .setColor(MOOLAH_COLOR)
             .setDescription(
               getLogMessage(
                 transactions,
@@ -178,16 +220,21 @@ function handleLog(interaction, transactions, authorid, entriesPerScreen) {
                 entriesPerScreen
               )
             );
-          m.edit({ embeds: [newEmbed] });
-          l[(m.createdAt, authorid)] = Math.min(
+          let new_pos = Math.min(
             l[(m.createdAt, authorid)] + entriesPerScreen,
             transactions.length - entriesPerScreen
           );
-        } else if (reaction.emoji.name === "⬆️") {
+          l[(m.createdAt, authorid)] = new_pos;
+          if (new_pos == transactions.length - entriesPerScreen) {
+            m.edit({ embeds: [newEmbed], components: [bottom_buttons] });
+          } else {
+            m.edit({ embeds: [newEmbed], components: [all_active_buttons] });
+          }
+        } else if (button === "up") {
           // go entriesPerScreen up
           newEmbed = new Discord.MessageEmbed()
             .setTitle(`Transaction log`)
-            .setColor(SUCCESS_COLOR)
+            .setColor(MOOLAH_COLOR)
             .setDescription(
               getLogMessage(
                 transactions,
@@ -195,36 +242,36 @@ function handleLog(interaction, transactions, authorid, entriesPerScreen) {
                 entriesPerScreen
               )
             );
-          m.edit({ embeds: [newEmbed] });
-          l[(m.createdAt, authorid)] = Math.max(
+          let new_pos = Math.max(
             l[(m.createdAt, authorid)] - entriesPerScreen,
             0
           );
-        } else if (reaction.emoji.name === "⏫") {
+          l[(m.createdAt, authorid)] = new_pos;
+          if (new_pos == 0) {
+            m.edit({ embeds: [newEmbed], components: [top_buttons] });
+          } else {
+            m.edit({ embeds: [newEmbed], components: [all_active_buttons] });
+          }
+        } else if (button === "full_up") {
           // go to the top of the list
           newEmbed = new Discord.MessageEmbed()
             .setTitle(`Transaction log`)
-            .setColor(SUCCESS_COLOR)
+            .setColor(MOOLAH_COLOR)
             .setDescription(getLogMessage(transactions, 0, entriesPerScreen));
-          m.edit({ embeds: [newEmbed] });
+          m.edit({ embeds: [newEmbed], components: [top_buttons] });
           l[(m.createdAt, authorid)] = 0;
         }
       }
 
-      collector.on("collect", (reaction, user) => {
-        handleReaction(reaction);
+      collector.on("collect", (i) => {
+        handleButton(i.customId);
       });
 
-      collector.on("remove", (reaction, user) => {
-        handleReaction(reaction);
+      collector.on("remove", (i) => {
+        handleButton(i.customId);
       });
 
-      collector.on("end", (collected) => {
-        m.reactions
-          .removeAll()
-          .catch((error) =>
-            console.error("Failed to clear reactions: ", error)
-          );
+      collector.on("end", (collected, reason) => {
         newEmbed = new Discord.MessageEmbed()
           .setTitle(`Transaction log -- Inactive`)
           .setColor(MOOLAH_COLOR)
@@ -235,10 +282,9 @@ function handleLog(interaction, transactions, authorid, entriesPerScreen) {
               entriesPerScreen
             )
           );
-        m.edit({ embeds: [newEmbed] });
+        m.edit({ embeds: [newEmbed], components: [] });
       });
-    }
-  });
+    });
 }
 
 function getLogMessage(transactions, startIndex, entriesPerScreen) {

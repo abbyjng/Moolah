@@ -29,25 +29,7 @@ module.exports = {
     const user = interaction.options.getUser("user");
     const emojiStr = interaction.options.getString("emoji");
 
-    if (emojiStr == "✅") {
-      interaction.reply({
-        embeds: [
-          {
-            description: `Emoji could not be set. ✅ is an invalid emoji, try something else.`,
-            color: ERROR_COLOR,
-          },
-        ],
-      });
-    } else if (emojiStr == "❌") {
-      interaction.reply({
-        embeds: [
-          {
-            description: `Emoji could not be set. ❌ is an invalid emoji, try something else.`,
-            color: ERROR_COLOR,
-          },
-        ],
-      });
-    } else if (emojiStr == "⬜") {
+    if (emojiStr == "⬜") {
       interaction.reply({
         embeds: [
           {

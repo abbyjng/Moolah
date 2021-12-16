@@ -1,4 +1,5 @@
 const Discord = require("discord.js");
+const { MessageActionRow, MessageButton } = require("discord.js");
 const { SlashCommandBuilder } = require("@discordjs/builders");
 const { openDb } = require("./../handlers/databaseHandler.js");
 const { updateLog } = require("./../handlers/logHandler.js");
@@ -64,6 +65,7 @@ module.exports = {
                 description: `Invalid command usage: the value submitted must be a positive value.`,
               },
             ],
+            components: [],
           });
         } else if (cost >= MAX_COST) {
           interaction.editReply({
@@ -73,6 +75,7 @@ module.exports = {
                 description: `Invalid command usage: the value submitted must be less than ${MAX_COST}.`,
               },
             ],
+            components: [],
           });
         } else if (description === "defaultPaidDescription") {
           interaction.editReply({
@@ -82,6 +85,7 @@ module.exports = {
                 description: `Congrats! You've found the one description message you are not allowed to use. Please try again.`,
               },
             ],
+            components: [],
           });
         } else if (description && description.length > MAX_DESCRIPTION) {
           interaction.editReply({
@@ -91,6 +95,7 @@ module.exports = {
                 description: `Invalid command usage: the description submitted must be <${MAX_DESCRIPTION} characters long.`,
               },
             ],
+            components: [],
           });
         } else {
           sql = `SELECT userid, emoji FROM users WHERE serverid = ? AND status = 1`;
@@ -138,6 +143,7 @@ module.exports = {
               description: `\`/bought\` is a transaction command and can only be used within the set transactions channel, <#${validChannel}>`,
             },
           ],
+          components: [],
         });
       }
     }
@@ -160,8 +166,6 @@ async function handleTransaction(
         return `${user.emoji}`;
       }
     });
-    emojis.push("❌");
-    emojis.push("✅");
 
     info = {
       recipients: [],
@@ -180,86 +184,110 @@ async function handleTransaction(
           name: `Current recipients:`,
           value: getInfoString(info, users.length),
         }
-      )
-      .setFooter(
-        `React with ✅ when finished selecting recipients.\nReact with ❌ to cancel this transaction.`
       );
-    interaction.editReply({ embeds: [embed] }).then((m) => {
-      t[(m.createdAt, authorid)] = info;
+    interaction
+      .editReply({
+        embeds: [embed],
+        components: getButtons(emojis, { recipients: [] }),
+      })
+      .then((m) => {
+        t[(m.createdAt, authorid)] = info;
 
-      Promise.all(
-        [m.react("✅")].concat(
-          users.map((user) => {
-            if (user.emoji.charAt(0) === "<") {
-              return m.react(
-                user.emoji.slice(user.emoji.indexOf(":", 2) + 1, -1)
-              );
-            } else {
-              return m.react(user.emoji);
-            }
-          }),
-          [m.react("❌")]
-        )
-      ).catch((error) =>
-        console.error("One of the emojis failed to react:", error)
-      );
+        const filter = (i) => i.user.id === interaction.user.id;
 
-      const filter = (reaction, user) => {
-        return (
-          t[(m.createdAt, authorid)].emojis.includes(reaction.emoji.name) &&
-          user.id !== m.author.id
-        );
-      };
+        // collector lasts for 2 minutes before cancelling
+        const collector = m.createMessageComponentCollector({
+          filter,
+          time: 120000,
+          dispose: true,
+        });
 
-      // collector lasts for 2 minutes before cancelling
-      const collector = m.createReactionCollector({
-        filter,
-        time: 120000,
-        dispose: true,
-      });
-
-      collector.on("collect", (reaction, user) => {
-        if (user.id === authorid) {
-          if (reaction.emoji.name === "✅") {
-            if (t[(m.createdAt, authorid)].recipients.length == 0) {
-              t[(m.createdAt, authorid)].recipients = users;
-            }
-            if (
-              t[(m.createdAt, authorid)].recipients.length == 1 &&
-              t[(m.createdAt, authorid)].recipients[0].userid == authorid
-            ) {
+        collector.on("collect", (i) => {
+          if (i.user.id === authorid) {
+            if (i.customId === "confirm") {
+              if (t[(m.createdAt, authorid)].recipients.length == 0) {
+                t[(m.createdAt, authorid)].recipients = users;
+              }
+              if (
+                t[(m.createdAt, authorid)].recipients.length == 1 &&
+                t[(m.createdAt, authorid)].recipients[0].userid == authorid
+              ) {
+                t[(m.createdAt, authorid)].status = StatusEnum.CANCELLED;
+                transactionInvalid(interaction);
+                resolve([0]);
+                // cancelled for invalid inputs
+                collector.stop();
+              } else {
+                t[(m.createdAt, authorid)].status = StatusEnum.GOOD;
+                confirmTransaction(
+                  interaction,
+                  interaction.user.id,
+                  t[(m.createdAt, authorid)].recipients,
+                  value,
+                  description
+                );
+                resolve(t[(m.createdAt, authorid)].recipients);
+                // confirm transaction
+                collector.stop();
+              }
+            } else if (i.customId === "cancel") {
               t[(m.createdAt, authorid)].status = StatusEnum.CANCELLED;
-              transactionInvalid(interaction);
+              transactionCancelled(interaction);
               resolve([0]);
-              // cancelled for invalid inputs
+              // cancelled by button
               collector.stop();
             } else {
-              t[(m.createdAt, authorid)].status = StatusEnum.GOOD;
-              confirmTransaction(
-                interaction,
-                interaction.user.id,
-                t[(m.createdAt, authorid)].recipients,
-                value,
-                description
-              );
-              resolve(t[(m.createdAt, authorid)].recipients);
-              // confirm transaction
-              collector.stop();
+              users.forEach((u) => {
+                if (
+                  i.customId === u.emoji ||
+                  i.customId === u.emoji.slice(2, u.emoji.indexOf(":", 2))
+                ) {
+                  t[(m.createdAt, authorid)].recipients.push(u);
+                }
+              });
+              newEmbed = new Discord.MessageEmbed()
+                .setTitle(`New transaction...`)
+                .setColor(MOOLAH_COLOR)
+                .addFields(
+                  {
+                    name: `Select recipients of this transaction:`,
+                    value: strUsers,
+                  },
+                  {
+                    name: `Current recipients:`,
+                    value: getInfoString(
+                      t[(m.createdAt, authorid)],
+                      users.length
+                    ),
+                  }
+                );
+              interaction.editReply({
+                embeds: [newEmbed],
+                components: getButtons(emojis, t[(m.createdAt, authorid)]),
+              });
             }
-          } else if (reaction.emoji.name === "❌") {
-            t[(m.createdAt, authorid)].status = StatusEnum.CANCELLED;
-            transactionCancelled(interaction);
-            resolve([0]);
-            // cancelled by button
-            collector.stop();
-          } else {
+          }
+        });
+
+        collector.on("remove", (reaction, user) => {
+          if (user.id === authorid) {
             users.forEach((u) => {
               if (
                 reaction.emoji.name === u.emoji ||
                 reaction.emoji.name ===
                   u.emoji.slice(2, u.emoji.indexOf(":", 2))
               ) {
-                t[(m.createdAt, authorid)].recipients.push(u);
+                for (
+                  let i = 0;
+                  i < t[(m.createdAt, authorid)].recipients.length;
+                  ++i
+                ) {
+                  if (
+                    t[(m.createdAt, authorid)].recipients[i].userid === u.userid
+                  ) {
+                    t[(m.createdAt, authorid)].recipients.splice(i, 1);
+                  }
+                }
               }
             });
             newEmbed = new Discord.MessageEmbed()
@@ -277,70 +305,74 @@ async function handleTransaction(
                     users.length
                   ),
                 }
-              )
-              .setFooter(
-                `React with ✅ when finished selecting recipients.\nReact with ❌ to cancel this transaction.`
               );
-            interaction.editReply({ embeds: [newEmbed] });
+            interaction.editReply({
+              embeds: [newEmbed],
+              components: getButtons(emojis, t[(m.createdAt, authorid)]),
+            });
           }
-        }
-      });
+        });
 
-      collector.on("remove", (reaction, user) => {
-        if (user.id === authorid) {
-          users.forEach((u) => {
-            if (
-              reaction.emoji.name === u.emoji ||
-              reaction.emoji.name === u.emoji.slice(2, u.emoji.indexOf(":", 2))
-            ) {
-              for (
-                let i = 0;
-                i < t[(m.createdAt, authorid)].recipients.length;
-                ++i
-              ) {
-                if (
-                  t[(m.createdAt, authorid)].recipients[i].userid === u.userid
-                ) {
-                  t[(m.createdAt, authorid)].recipients.splice(i, 1);
-                }
-              }
-            }
-          });
-          newEmbed = new Discord.MessageEmbed()
-            .setTitle(`New transaction...`)
-            .setColor(MOOLAH_COLOR)
-            .addFields(
-              {
-                name: `Select recipients of this transaction:`,
-                value: strUsers,
-              },
-              {
-                name: `Current recipients:`,
-                value: getInfoString(t[(m.createdAt, authorid)], users.length),
-              }
-            )
-            .setFooter(
-              `React with ✅ when finished selecting recipients.\nReact with ❌ to cancel this transaction.`
-            );
-          interaction.editReply({ embeds: [newEmbed] });
-        }
+        collector.on("end", (collected, reason) => {
+          if (t[(m.createdAt, authorid)].status == StatusEnum.WORKING) {
+            t[(m.createdAt, authorid)].status = StatusEnum.TIMEDOUT;
+            transactionTimedOut(interaction);
+            resolve([-1]);
+            // time ran out
+          }
+        });
       });
-
-      collector.on("end", (collected) => {
-        m.reactions
-          .removeAll()
-          .catch((error) =>
-            console.error("Failed to clear reactions: ", error)
-          );
-        if (t[(m.createdAt, authorid)].status == StatusEnum.WORKING) {
-          t[(m.createdAt, authorid)].status = StatusEnum.TIMEDOUT;
-          transactionTimedOut(interaction);
-          resolve([-1]);
-          // time ran out
-        }
-      });
-    });
   });
+}
+
+function getButtons(emojis, info) {
+  rows = [];
+  buttons = new MessageActionRow();
+  if (info.recipients.length == 0) {
+    buttons.addComponents(
+      new MessageButton()
+        .setCustomId("confirm")
+        .setLabel("All")
+        .setStyle("SUCCESS")
+    );
+  } else {
+    buttons.addComponents(
+      new MessageButton()
+        .setCustomId("confirm")
+        .setLabel("Confirm")
+        .setStyle("SUCCESS")
+    );
+  }
+  emojis.forEach((emoji) => {
+    if (buttons.components.length == 5) {
+      rows.push(buttons);
+      buttons = new MessageActionRow();
+    }
+    style = "SECONDARY";
+    info.recipients.forEach((user) => {
+      if (user.emoji == emoji) {
+        style = "PRIMARY";
+      }
+    });
+    buttons.addComponents(
+      new MessageButton().setCustomId(emoji).setEmoji(emoji).setStyle(style)
+    );
+  });
+
+  if (buttons.components.length == 5) {
+    rows.push(buttons);
+    buttons = new MessageActionRow();
+  }
+
+  buttons.addComponents(
+    new MessageButton()
+      .setCustomId("cancel")
+      .setLabel("Cancel")
+      .setStyle("DANGER")
+  );
+
+  rows.push(buttons);
+  return rows;
 }
 
 function getFormattedUsers(users, userid = null) {
@@ -412,6 +444,7 @@ function confirmTransaction(
         description: msg,
       },
     ],
+    components: [],
   });
 }
 
@@ -423,6 +456,7 @@ function transactionInvalid(interaction) {
         color: ERROR_COLOR,
       },
     ],
+    components: [],
   });
 }
 
@@ -434,6 +468,7 @@ function transactionCancelled(interaction) {
         color: ERROR_COLOR,
       },
     ],
+    components: [],
   });
 }
 
@@ -445,6 +480,7 @@ function transactionTimedOut(interaction) {
         color: ERROR_COLOR,
       },
     ],
+    components: [],
   });
   return;
 }
