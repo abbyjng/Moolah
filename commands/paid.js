@@ -254,7 +254,7 @@ async function handlePayment(interaction, authorid, users, strUsers, value) {
         return;
       }
       if (user.emoji.charAt(0) === "<") {
-        return user.emoji.slice(2, user.emoji.indexOf(":", 2));
+        return user.emoji.slice(user.emoji.indexOf(":", 2) + 1, -1);
       } else {
         return `${user.emoji}`;
       }
@@ -332,7 +332,7 @@ async function handlePayment(interaction, authorid, users, strUsers, value) {
             users.forEach((u) => {
               if (
                 i.customId === u.emoji ||
-                i.customId === u.emoji.slice(2, u.emoji.indexOf(":", 2))
+                i.customId === u.emoji.slice(u.emoji.indexOf(":", 2) + 1, -1)
               ) {
                 t[(m.createdAt, authorid)].recipient = u;
                 t[(m.createdAt, authorid)].status = StatusEnum.GOOD;
