@@ -1,4 +1,5 @@
 const Discord = require("discord.js");
+const { MessageActionRow, MessageButton } = require("discord.js");
 const { SlashCommandBuilder } = require("@discordjs/builders");
 const { openDb } = require("./../handlers/databaseHandler.js");
 const { updateLog } = require("./../handlers/logHandler.js");
@@ -70,6 +71,7 @@ module.exports = {
                 description: `Invalid command usage: the value submitted must be a positive value.`,
               },
             ],
+            components: [],
           });
         } else if (cost >= MAX_OWE) {
           interaction.editReply({
@@ -79,6 +81,7 @@ module.exports = {
                 description: `Invalid command usage: the value submitted must be less than ${MAX_OWE}.`,
               },
             ],
+            components: [],
           });
         } else if (description && description.length > MAX_DESCRIPTION) {
           interaction.editReply({
@@ -88,6 +91,7 @@ module.exports = {
                 description: `Invalid command usage: the description submitted must be <${MAX_DESCRIPTION} characters long.`,
               },
             ],
+            components: [],
           });
         } else if (!user) {
           // do embed
@@ -138,6 +142,7 @@ module.exports = {
                   description: `<@!${user.id}> is not an active user. Use /setuser to register a new user.`,
                 },
               ],
+              components: [],
             });
           } else if (user.id === interaction.user.id) {
             interaction.editReply({
@@ -147,6 +152,7 @@ module.exports = {
                   description: `Invalid action: you cannot log a debt to yourself.`,
                 },
               ],
+              components: [],
             });
           } else {
             let userid = user.id;
@@ -185,6 +191,7 @@ module.exports = {
               description: `\`/owe\` is a transaction command and can only be used within the set transactions channel, <#${validChannel}>`,
             },
           ],
+          components: [],
         });
       }
     }
@@ -201,13 +208,47 @@ async function handleOwe(
 ) {
   return new Promise((resolve, reject) => {
     emojis = users.map((user) => {
+      if (user.userid == authorid) {
+        return;
+      }
       if (user.emoji.charAt(0) === "<") {
         return user.emoji.slice(2, user.emoji.indexOf(":", 2));
       } else {
         return `${user.emoji}`;
       }
     });
-    emojis.push("❌");
+
+    rows = [];
+    buttons = new MessageActionRow();
+
+    emojis.forEach((emoji) => {
+      if (emoji) {
+        if (buttons.components.length == 5) {
+          rows.push(buttons);
+          buttons = new MessageActionRow();
+        }
+        buttons.addComponents(
+          new MessageButton()
+            .setCustomId(emoji)
+            .setEmoji(emoji)
+            .setStyle("SECONDARY")
+        );
+      }
+    });
+
+    if (buttons.components.length == 5) {
+      rows.push(buttons);
+      buttons = new MessageActionRow();
+    }
+
+    buttons.addComponents(
+      new MessageButton()
+        .setCustomId("cancel")
+        .setLabel("Cancel")
+        .setStyle("DANGER")
+    );
+
+    rows.push(buttons);
 
     info = {
       recipient: "",
@@ -232,44 +273,21 @@ async function handleOwe(
         value: strUsers,
       })
       .setColor(MOOLAH_COLOR);
-    interaction.editReply({ embeds: [embed] }).then((m) => {
+    interaction.editReply({ embeds: [embed], components: rows }).then((m) => {
       t[(m.createdAt, authorid)] = info;
 
-      Promise.all(
-        users
-          .map((user) => {
-            if (user.userid != authorid) {
-              if (user.emoji.charAt(0) === "<") {
-                return m.react(
-                  user.emoji.slice(user.emoji.indexOf(":", 2) + 1, -1)
-                );
-              } else {
-                return m.react(user.emoji);
-              }
-            }
-          })
-          .concat([m.react("❌")])
-      ).catch((error) =>
-        console.error("One of the emojis failed to react:", error)
-      );
-
-      const filter = (reaction, user) => {
-        return (
-          t[(m.createdAt, authorid)].emojis.includes(reaction.emoji.name) &&
-          user.id !== m.author.id
-        );
-      };
+      const filter = (i) => i.user.id === interaction.user.id;
 
       // collector lasts for 2 minutes before cancelling
-      const collector = m.createReactionCollector({
+      const collector = m.createMessageComponentCollector({
         filter,
         time: 120000,
         dispose: true,
       });
 
-      collector.on("collect", (reaction, user) => {
-        if (user.id === authorid) {
-          if (reaction.emoji.name === "❌") {
+      collector.on("collect", (i) => {
+        if (i.user.id === authorid) {
+          if (i.customId === "cancel") {
             t[(m.createdAt, authorid)].status = StatusEnum.CANCELLED;
             transactionCancelled(interaction);
             resolve(0);
@@ -278,9 +296,8 @@ async function handleOwe(
           } else {
             users.forEach((u) => {
               if (
-                reaction.emoji.name === u.emoji ||
-                reaction.emoji.name ===
-                  u.emoji.slice(2, u.emoji.indexOf(":", 2))
+                i.customId === u.emoji ||
+                i.customId === u.emoji.slice(2, u.emoji.indexOf(":", 2))
               ) {
                 t[(m.createdAt, authorid)].recipient = u;
                 t[(m.createdAt, authorid)].status = StatusEnum.GOOD;
@@ -301,11 +318,6 @@ async function handleOwe(
       });
 
       collector.on("end", (collected) => {
-        m.reactions
-          .removeAll()
-          .catch((error) =>
-            console.error("Failed to clear reactions: ", error)
-          );
         if (t[(m.createdAt, authorid)].status == StatusEnum.WORKING) {
           t[(m.createdAt, authorid)].status = StatusEnum.TIMEDOUT;
           transactionTimedOut(interaction);
@@ -347,6 +359,7 @@ function confirmDebt(interaction, ownerid, userid, emoji, value, description) {
         description: msg,
       },
     ],
+    components: [],
   });
 }
 
@@ -358,6 +371,7 @@ function transactionCancelled(interaction) {
         color: ERROR_COLOR,
       },
     ],
+    components: [],
   });
 }
 
@@ -369,6 +383,7 @@ function transactionTimedOut(interaction) {
         color: ERROR_COLOR,
       },
     ],
+    components: [],
   });
   return;
 }
