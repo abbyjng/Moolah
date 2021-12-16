@@ -167,8 +167,6 @@ async function handleTransaction(
       }
     });
 
-    console.log(emojis);
-
     info = {
       recipients: [],
       value: value,
@@ -244,7 +242,23 @@ async function handleTransaction(
                   i.customId === u.emoji ||
                   i.customId === u.emoji.slice(u.emoji.indexOf(":", 2) + 1, -1)
                 ) {
-                  t[(m.createdAt, authorid)].recipients.push(u);
+                  let found = false;
+                  for (
+                    let i = 0;
+                    i < t[(m.createdAt, authorid)].recipients.length;
+                    ++i
+                  ) {
+                    if (
+                      t[(m.createdAt, authorid)].recipients[i].userid ===
+                      u.userid
+                    ) {
+                      t[(m.createdAt, authorid)].recipients.splice(i, 1);
+                      found = true;
+                    }
+                  }
+                  if (!found) {
+                    t[(m.createdAt, authorid)].recipients.push(u);
+                  }
                 }
               });
               newEmbed = new Discord.MessageEmbed()
@@ -268,50 +282,6 @@ async function handleTransaction(
                 components: getButtons(emojis, t[(m.createdAt, authorid)]),
               });
             }
-          }
-        });
-
-        collector.on("remove", (reaction, user) => {
-          if (user.id === authorid) {
-            users.forEach((u) => {
-              if (
-                reaction.emoji.name === u.emoji ||
-                reaction.emoji.name ===
-                  u.emoji.slice(2, u.emoji.indexOf(":", 2))
-              ) {
-                for (
-                  let i = 0;
-                  i < t[(m.createdAt, authorid)].recipients.length;
-                  ++i
-                ) {
-                  if (
-                    t[(m.createdAt, authorid)].recipients[i].userid === u.userid
-                  ) {
-                    t[(m.createdAt, authorid)].recipients.splice(i, 1);
-                  }
-                }
-              }
-            });
-            newEmbed = new Discord.MessageEmbed()
-              .setTitle(`New transaction...`)
-              .setColor(MOOLAH_COLOR)
-              .addFields(
-                {
-                  name: `Select recipients of this transaction:`,
-                  value: strUsers,
-                },
-                {
-                  name: `Current recipients:`,
-                  value: getInfoString(
-                    t[(m.createdAt, authorid)],
-                    users.length
-                  ),
-                }
-              );
-            interaction.editReply({
-              embeds: [newEmbed],
-              components: getButtons(emojis, t[(m.createdAt, authorid)]),
-            });
           }
         });
 
@@ -352,7 +322,10 @@ function getButtons(emojis, info) {
     }
     style = "SECONDARY";
     info.recipients.forEach((user) => {
-      if (user.emoji == emoji) {
+      if (
+        emoji === user.emoji ||
+        emoji === user.emoji.slice(user.emoji.indexOf(":", 2) + 1, -1)
+      ) {
         style = "PRIMARY";
       }
     });
