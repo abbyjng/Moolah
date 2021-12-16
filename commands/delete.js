@@ -1,4 +1,5 @@
 const Discord = require("discord.js");
+const { MessageActionRow, MessageButton } = require("discord.js");
 const { SlashCommandBuilder } = require("@discordjs/builders");
 const { openDb } = require("./../handlers/databaseHandler.js");
 const { updateLog } = require("./../handlers/logHandler.js");
@@ -147,7 +148,16 @@ async function handleDelete(
   number
 ) {
   return new Promise((resolve, reject) => {
-    emojis = ["❌", "✅"];
+    const buttons = new MessageActionRow().addComponents(
+      new MessageButton()
+        .setCustomId("confirm")
+        .setLabel("Confirm")
+        .setStyle("SUCCESS"),
+      new MessageButton()
+        .setCustomId("cancel")
+        .setLabel("Cancel")
+        .setStyle("DANGER")
+    );
 
     var descString = `**Transaction #${number + 1}:**\n`;
     if (transaction.description == "defaultPaidDescription") {
@@ -182,73 +192,67 @@ async function handleDelete(
     embed = new Discord.MessageEmbed()
       .setTitle(`Delete this transaction?`)
       .setColor(MOOLAH_COLOR)
-      .setDescription(descString)
-      .setFooter(`React with ✅ to confirm or ❌ to cancel this action.`);
-    interaction.editReply({ embeds: [embed] }).then((m) => {
-      Promise.all([m.react("✅"), m.react("❌")]).catch((error) =>
-        console.error("One of the emojis failed to react:", error)
-      );
+      .setDescription(descString);
+    interaction
+      .editReply({ embeds: [embed], components: [buttons] })
+      .then((m) => {
+        const filter = (i) => i.user.id === interaction.user.id;
 
-      const filter = (reaction, user) => {
-        return emojis.includes(reaction.emoji.name) && user.id !== m.author.id;
-      };
+        // collector lasts for 2 minutes before cancelling
+        const collector = m.createMessageComponentCollector({
+          filter,
+          time: 120000,
+          dispose: true,
+        });
 
-      // collector lasts for 2 minutes before cancelling
-      const collector = m.createReactionCollector({
-        filter,
-        time: 120000,
-        dispose: true,
-      });
-
-      collector.on("collect", (reaction, user) => {
-        if (user.id === authorid) {
+        collector.on("collect", (i) => {
           collector.stop();
-        }
-      });
+        });
 
-      collector.on("end", (collected) => {
-        m.reactions
-          .removeAll()
-          .catch((error) =>
-            console.error("Failed to clear reactions: ", error)
-          );
-        if (collected.length === 0) {
-          resolve(-1);
-          interaction.editReply({
-            embeds: [
-              {
-                description: `Action timed out - transaction #${
-                  number + 1
-                } has not been deleted.`,
-                color: ERROR_COLOR,
-              },
-            ],
-          });
-        } else if (collected.keys().next().value === "❌") {
-          resolve(0);
-          interaction.editReply({
-            embeds: [
-              {
-                description: `Action cancelled - transaction #${
-                  number + 1
-                } has not been deleted.`,
-                color: ERROR_COLOR,
-              },
-            ],
-          });
-        } else if (collected.keys().next().value === "✅") {
-          resolve(1);
-          interaction.editReply({
-            embeds: [
-              {
-                description: `Transaction #${number + 1} deleted successfully.`,
-                color: SUCCESS_COLOR,
-              },
-            ],
-          });
-        }
+        collector.on("end", (collected, reason) => {
+          if (reason === "time") {
+            interaction.editReply({
+              embeds: [
+                {
+                  description: `Action timed out - transaction #${
+                    number + 1
+                  } has not been deleted.`,
+                  color: ERROR_COLOR,
+                },
+              ],
+              components: [],
+            });
+          } else if (
+            collected.entries().next().value[1].customId === "cancel"
+          ) {
+            interaction.editReply({
+              embeds: [
+                {
+                  description: `Action cancelled - transaction #${
+                    number + 1
+                  } has not been deleted.`,
+                  color: ERROR_COLOR,
+                },
+              ],
+              components: [],
+            });
+          } else if (
+            collected.entries().next().value[1].customId === "confirm"
+          ) {
+            interaction.editReply({
+              embeds: [
+                {
+                  description: `Transaction #${
+                    number + 1
+                  } deleted successfully.`,
+                  color: SUCCESS_COLOR,
+                },
+              ],
+              components: [],
+            });
+          }
+        });
       });
-    });
   });
 }
 
