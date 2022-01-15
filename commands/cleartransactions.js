@@ -90,6 +90,7 @@ async function handleClear(interaction, authorid) {
 
         collector.on("end", (collected, reason) => {
           if (collected.length === 0) {
+            resolve(-1);
             interaction.editReply({
               embeds: [
                 {
@@ -102,6 +103,7 @@ async function handleClear(interaction, authorid) {
           } else if (
             collected.entries().next().value[1].customId === "cancel"
           ) {
+            resolve(0);
             interaction.editReply({
               embeds: [
                 {
@@ -114,6 +116,7 @@ async function handleClear(interaction, authorid) {
           } else if (
             collected.entries().next().value[1].customId === "confirm"
           ) {
+            resolve(1);
             interaction.editReply({
               embeds: [
                 {

@@ -110,6 +110,7 @@ module.exports = {
               recipients,
               num - 1
             ).then((result) => {
+              console.log(result);
               if (result === 1) {
                 transactionid = transactionids[num - 1].transactionid;
                 db.run(
@@ -211,6 +212,7 @@ async function handleDelete(
 
         collector.on("end", (collected, reason) => {
           if (reason === "time") {
+            resolve(-1);
             interaction.editReply({
               embeds: [
                 {
@@ -225,6 +227,7 @@ async function handleDelete(
           } else if (
             collected.entries().next().value[1].customId === "cancel"
           ) {
+            resolve(0);
             interaction.editReply({
               embeds: [
                 {
@@ -239,6 +242,7 @@ async function handleDelete(
           } else if (
             collected.entries().next().value[1].customId === "confirm"
           ) {
+            resolve(1);
             interaction.editReply({
               embeds: [
                 {
