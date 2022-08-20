@@ -170,8 +170,8 @@ module.exports = {
                 cost
               ).then((recipient) => {
                 if (recipient !== 0 && recipient !== -1) {
-                  sql = `INSERT INTO transactions (serverid, value, description)
-                                        VALUES (?, ?, "defaultPaidDescription")`;
+                  sql = `INSERT INTO transactions (serverid, value, description, type, category)
+                                        VALUES (?, ?, "defaultPaidDescription", "SERVER", "")`;
                   db.run(sql, [interaction.guildId, cost]).then(() => {
                     db.run("SELECT last_insert_rowid()").then(
                       (transactionid) => {
@@ -218,8 +218,8 @@ module.exports = {
             } else {
               let userid = user.id;
               // insert into transactions
-              sql = `INSERT INTO transactions (serverid, value, description)
-                                VALUES (?, ?, "defaultPaidDescription")`;
+              sql = `INSERT INTO transactions (serverid, value, description, type, category)
+                                VALUES (?, ?, "defaultPaidDescription", "SERVER", "")`;
               db.run(sql, [interaction.guildId, cost]).then(() => {
                 db.run("SELECT last_insert_rowid()").then((transactionid) => {
                   sql = `INSERT INTO transactionhands (serverid, transactionid, owner, recipient)

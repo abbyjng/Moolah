@@ -20,6 +20,8 @@ CREATE TABLE IF NOT EXISTS transactions(
     transactionid INTEGER NOT NULL,
     value REAL NOT NULL,
     description TEXT,
+    type TEXT CHECK(type IN ('DM','SERVER')) NOT NULL,
+    category TEXT,
     created DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (serverid) REFERENCES servers(serverid) ON UPDATE CASCADE ON DELETE CASCADE
     PRIMARY KEY (transactionid)
@@ -32,4 +34,15 @@ CREATE TABLE IF NOT EXISTS transactionhands(
     recipient TEXT NOT NULL,
     FOREIGN KEY (serverid) REFERENCES servers(serverid) ON UPDATE CASCADE ON DELETE CASCADE
     FOREIGN KEY (transactionid) REFERENCES transactions(transactionid) ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS dms(
+    userid TEXT PRIMARY KEY,
+    logembed TEXT
+);
+
+CREATE TABLE IF NOT EXISTS categories(
+    userid TEXT,
+    name TEXT,
+    PRIMARY KEY (userid, name)
 );

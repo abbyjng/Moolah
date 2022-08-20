@@ -33,15 +33,12 @@ module.exports = {
     await interaction.deferReply();
 
     let db = await openDb();
+    const userid = interaction.user.id;
     const isDM = interaction.guild === null;
 
     sql = `SELECT userid FROM users WHERE userid = ? AND serverid = ? AND status = 1`;
     let validUser = await checkValidUser(interaction);
     if (validUser) {
-      let validChannel = await checkTransactionsChannel(
-        interaction.channelId,
-        interaction.guildId
-      );
       let validChannel = null;
       if (!isDM) {
         validChannel = await checkTransactionsChannel(
@@ -53,17 +50,18 @@ module.exports = {
       }
       if (!validChannel) {
         // get all transactions in this server
-        sql = ` SELECT 
-                            transactionid, 
-                            value, 
-                            description, 
-                            CAST(strftime('%s', created) AS INT) AS created 
-                        FROM 
-                            transactions 
-                        WHERE 
-                            serverid = ?`;
+        sql = ` SELECT  
+                          transactionid, 
+                          value, 
+                          description, 
+                          category,
+                          CAST(strftime('%s', created) AS INT) AS created 
+                      FROM 
+                          transactions 
+                      WHERE 
+                          serverid = ?`;
 
-        transactions = await db.all(sql, [interaction.guildId]);
+        transactions = await db.all(sql, [isDM ? userid : interaction.guildId]);
 
         let num;
 
@@ -98,7 +96,9 @@ module.exports = {
             else return -1;
           });
 
-          sql = ` SELECT 
+          recipients = null;
+          if (!isDM) {
+            sql = ` SELECT 
                                 owner,  
                                 emoji
                             FROM
@@ -108,18 +108,20 @@ module.exports = {
                             WHERE 
                                 transactionid = ?`;
 
-          recipients = await db.all(sql, [transactions[num - 1].transactionid]);
+            recipients = await db.all(sql, [
+              transactions[num - 1].transactionid,
+            ]);
+          }
 
           (async function () {
             handleDelete(
               interaction,
-              interaction.user.id,
               transactions[num - 1],
               recipients,
-              num - 1
+              num - 1,
+              isDM
             ).then((result) => {
-              console.log(result);
-              if (result === 1) {
+              if (result === 1 && !isDM) {
                 transactionid = transactions[num - 1].transactionid;
                 db.run(
                   `DELETE FROM transactions WHERE serverid = ? AND transactionid = ?;`,
@@ -131,6 +133,14 @@ module.exports = {
                   `DELETE FROM transactionhands WHERE serverid = ? AND transactionid = ?;`,
                   [interaction.guildId, transactionid]
                 );
+              } else if (result === 1 && isDM) {
+                transactionid = transactions[num - 1].transactionid;
+                db.run(
+                  `DELETE FROM transactions WHERE serverid = ? AND transactionid = ?;`,
+                  [userid, transactionid]
+                ).then(() => {
+                  // updateLog(interaction.guild); TODO
+                });
               }
             });
           })();
@@ -151,10 +161,10 @@ module.exports = {
 
 async function handleDelete(
   interaction,
-  authorid,
   transaction,
   recipients,
-  number
+  number,
+  isDM
 ) {
   return new Promise((resolve, reject) => {
     const buttons = new MessageActionRow().addComponents(
@@ -169,32 +179,42 @@ async function handleDelete(
     );
 
     var descString = `**Transaction #${number + 1}:**\n`;
-    if (transaction.description == "defaultPaidDescription") {
-      descString += `<@!${recipients[0].owner}> paid ${recipients[0].emoji} `;
-      descString += `[$${transaction.value.toFixed(2)}] | <t:${
-        transaction.created
-      }:d>}\n`;
-    } else if (transaction.value < 0) {
-      // owe
-      descString += `<@!${recipients[0].owner}> owes ${recipients[0].emoji} `;
-      descString += `[$${(-transaction.value).toFixed(2)}] `;
-      if (transaction.description) {
-        descString += `"${transaction.description}" `;
-      }
-      descString += `| <t:${transaction.created}:d>\n`;
-    } else {
-      descString += `<@!${recipients[0].owner}> → `;
-      recipients.forEach((recipient) => {
-        descString += recipient.emoji;
-      });
-      if (recipients.length > 1) {
-        descString += ` [$${transaction.value.toFixed(2)}ea] `;
+    if (!isDM) {
+      if (transaction.description == "defaultPaidDescription") {
+        descString += `<@!${recipients[0].owner}> paid ${recipients[0].emoji} `;
+        descString += `[$${transaction.value.toFixed(2)}] | <t:${
+          transaction.created
+        }:d>}\n`;
+      } else if (transaction.value < 0) {
+        // owe
+        descString += `<@!${recipients[0].owner}> owes ${recipients[0].emoji} `;
+        descString += `[$${(-transaction.value).toFixed(2)}] `;
+        if (transaction.description) {
+          descString += `"${transaction.description}" `;
+        }
+        descString += `| <t:${transaction.created}:d>\n`;
       } else {
-        descString += ` [$${transaction.value.toFixed(2)}] `;
+        descString += `<@!${recipients[0].owner}> → `;
+        recipients.forEach((recipient) => {
+          descString += recipient.emoji;
+        });
+        if (recipients.length > 1) {
+          descString += ` [$${transaction.value.toFixed(2)}ea] `;
+        } else {
+          descString += ` [$${transaction.value.toFixed(2)}] `;
+        }
+        if (transaction.description) {
+          descString += `"${transaction.description}" `;
+        }
+        descString += `| <t:${transaction.created}:d>\n`;
       }
+    } else {
+      descString += `$${transaction.value.toFixed(2)}`;
+
       if (transaction.description) {
-        descString += `"${transaction.description}" `;
+        descString += ` for "${transaction.description}"`;
       }
+      descString += ` in category \`${transaction.category}\``;
       descString += ` | <t:${transaction.created}:d>\n`;
     }
 
