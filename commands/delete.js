@@ -42,18 +42,18 @@ module.exports = {
         interaction.guildId
       );
       if (!validChannel) {
-        // get all transactionids in this server
+        // get all transactions in this server
         sql = ` SELECT 
                             transactionid, 
                             value, 
                             description, 
-                            created 
+                            CAST(strftime('%s', created) AS INT) AS created 
                         FROM 
                             transactions 
                         WHERE 
                             serverid = ?`;
 
-        transactionids = await db.all(sql, [interaction.guildId]);
+        transactions = await db.all(sql, [interaction.guildId]);
 
         let num;
 
@@ -61,7 +61,7 @@ module.exports = {
           num = interaction.options.getInteger("transaction");
         } else {
           // last
-          num = transactionids.length;
+          num = transactions.length;
         }
 
         if (num <= 0) {
@@ -73,7 +73,7 @@ module.exports = {
               },
             ],
           });
-        } else if (num > transactionids.length) {
+        } else if (num > transactions.length) {
           interaction.editReply({
             embeds: [
               {
@@ -83,7 +83,7 @@ module.exports = {
             ],
           });
         } else {
-          transactionids.sort(function (a, b) {
+          transactions.sort(function (a, b) {
             if (a.created > b.created) return 1;
             else return -1;
           });
@@ -98,21 +98,19 @@ module.exports = {
                             WHERE 
                                 transactionid = ?`;
 
-          recipients = await db.all(sql, [
-            transactionids[num - 1].transactionid,
-          ]);
+          recipients = await db.all(sql, [transactions[num - 1].transactionid]);
 
           (async function () {
             handleDelete(
               interaction,
               interaction.user.id,
-              transactionids[num - 1],
+              transactions[num - 1],
               recipients,
               num - 1
             ).then((result) => {
               console.log(result);
               if (result === 1) {
-                transactionid = transactionids[num - 1].transactionid;
+                transactionid = transactions[num - 1].transactionid;
                 db.run(
                   `DELETE FROM transactions WHERE serverid = ? AND transactionid = ?;`,
                   [interaction.guildId, transactionid]
@@ -163,9 +161,9 @@ async function handleDelete(
     var descString = `**Transaction #${number + 1}:**\n`;
     if (transaction.description == "defaultPaidDescription") {
       descString += `<@!${recipients[0].owner}> paid ${recipients[0].emoji} `;
-      descString += `[$${transaction.value.toFixed(2)}] | ${getFormattedDate(
+      descString += `[$${transaction.value.toFixed(2)}] | <t:${
         transaction.created
-      )}\n`;
+      }:d>}\n`;
     } else if (transaction.value < 0) {
       // owe
       descString += `<@!${recipients[0].owner}> owes ${recipients[0].emoji} `;
@@ -173,7 +171,7 @@ async function handleDelete(
       if (transaction.description) {
         descString += `"${transaction.description}" `;
       }
-      descString += `| ${getFormattedDate(transaction.created)}\n`;
+      descString += `| <t:${transaction.created}:d>\n`;
     } else {
       descString += `<@!${recipients[0].owner}> → `;
       recipients.forEach((recipient) => {
@@ -187,7 +185,7 @@ async function handleDelete(
       if (transaction.description) {
         descString += `"${transaction.description}" `;
       }
-      descString += `| ${getFormattedDate(transaction.created)}\n`;
+      descString += ` | <t:${transaction.created}:d>\n`;
     }
 
     embed = new Discord.MessageEmbed()
@@ -258,12 +256,4 @@ async function handleDelete(
         });
       });
   });
-}
-
-function getFormattedDate(date) {
-  date = new Date(date + "Z");
-  d = date.getDate();
-  m = date.getMonth() + 1;
-  y = date.getFullYear();
-  return m + "-" + (d <= 9 ? "0" + d : d) + "-" + y;
 }

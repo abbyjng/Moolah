@@ -83,8 +83,8 @@ client.on("guildCreate", async function (server) {
   existingServer = await db.get(sql, [server.id]);
   if (!existingServer) {
     // add server to the database
-    sql = `INSERT INTO servers (serverid, transactionsid, logid, alertsid) 
-                        VALUES (?, "", "", "");`;
+    sql = `INSERT INTO servers (serverid, transactionsid, logid, alertsid, logembed) 
+                        VALUES (?, "", "", "", "");`;
     db.run(sql, [server.id.toString()]);
   }
 
