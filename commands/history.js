@@ -28,7 +28,7 @@ module.exports = {
                         transactionid, 
                         value, 
                         description, 
-                        created 
+                        CAST(strftime('%s', created) AS INT) AS created 
                     FROM 
                         transactions 
                     WHERE 
@@ -167,6 +167,29 @@ function handleLog(interaction, transactions, authorid, entriesPerScreen) {
       .setStyle("SECONDARY")
   );
 
+  const no_active_buttons = new MessageActionRow().addComponents(
+    new MessageButton()
+      .setCustomId("full_down")
+      .setEmoji("⏬")
+      .setStyle("SECONDARY")
+      .setDisabled(true),
+    new MessageButton()
+      .setCustomId("down")
+      .setEmoji("⬇️")
+      .setStyle("SECONDARY")
+      .setDisabled(true),
+    new MessageButton()
+      .setCustomId("up")
+      .setEmoji("⬆️")
+      .setStyle("SECONDARY")
+      .setDisabled(true),
+    new MessageButton()
+      .setCustomId("full_up")
+      .setEmoji("⏫")
+      .setStyle("SECONDARY")
+      .setDisabled(true)
+  );
+
   embed = new Discord.MessageEmbed()
     .setTitle(`Transaction log`)
     .setColor(MOOLAH_COLOR)
@@ -178,7 +201,14 @@ function handleLog(interaction, transactions, authorid, entriesPerScreen) {
       )
     );
   interaction
-    .editReply({ embeds: [embed], components: [bottom_buttons] })
+    .editReply({
+      embeds: [embed],
+      components: [
+        transactions.length <= entriesPerScreen
+          ? no_active_buttons
+          : bottom_buttons,
+      ],
+    })
     .then((m) => {
       l[(m.createdAt, authorid)] = transactions.length - entriesPerScreen;
       const filter = (i) => true;
@@ -199,7 +229,7 @@ function handleLog(interaction, transactions, authorid, entriesPerScreen) {
             .setDescription(
               getLogMessage(
                 transactions,
-                transactions.length - entriesPerScreen,
+                Math.max(transactions.length - entriesPerScreen, 0),
                 entriesPerScreen
               )
             );
@@ -215,7 +245,7 @@ function handleLog(interaction, transactions, authorid, entriesPerScreen) {
                 transactions,
                 Math.min(
                   l[(m.createdAt, authorid)] + entriesPerScreen,
-                  transactions.length - entriesPerScreen
+                  Math.max(transactions.length - entriesPerScreen, 0)
                 ),
                 entriesPerScreen
               )
@@ -299,9 +329,9 @@ function getLogMessage(transactions, startIndex, entriesPerScreen) {
       retStr += `${i + 1}) <@!${transactions[i].owner}> paid ${
         transactions[i].emojis[0]
       } `;
-      retStr += `[$${transactions[i].value.toFixed(2)}] | ${getFormattedDate(
+      retStr += `[$${transactions[i].value.toFixed(2)}] | <t:${
         transactions[i].created
-      )}\n`;
+      }:d>\n`;
     } else if (transactions[i].value < 0) {
       // owe
       retStr += `${i + 1}) <@!${transactions[i].owner}> owes ${
@@ -311,7 +341,7 @@ function getLogMessage(transactions, startIndex, entriesPerScreen) {
       if (transactions[i].description) {
         retStr += `"${transactions[i].description}" `;
       }
-      retStr += `| ${getFormattedDate(transactions[i].created)}\n`;
+      retStr += `| <t:${transactions[i].created}:d>\n`;
     } else {
       // bought
       retStr += `${i + 1}) <@!${transactions[i].owner}> → `;
@@ -326,17 +356,9 @@ function getLogMessage(transactions, startIndex, entriesPerScreen) {
       if (transactions[i].description) {
         retStr += `"${transactions[i].description}" `;
       }
-      retStr += `| ${getFormattedDate(transactions[i].created)}\n`;
+      retStr += `| <t:${transactions[i].created}:d>\n`;
     }
   }
 
   return retStr;
-}
-
-function getFormattedDate(date) {
-  date = new Date(date + "Z");
-  d = date.getDate();
-  m = date.getMonth() + 1;
-  y = date.getFullYear();
-  return m + "-" + (d <= 9 ? "0" + d : d) + "-" + y;
 }

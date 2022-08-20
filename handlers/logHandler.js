@@ -48,12 +48,10 @@ async function getLogEmbeds(server) {
   db = await openDb();
   embeds = [];
   return new Promise((resolve, reject) => {
-    var log = {};
-    // populate the log dictionary with users
     sql = `SELECT userid, emoji FROM users WHERE serverid = ? AND status = 1`;
     db.all(sql, [server.id]).then((users) => {
       if (users.length <= 1) {
-        resolve(`No transactions available.`);
+        resolve([{ color: MOOLAH_COLOR, title: `No transactions available.` }]);
       }
       var description = ``;
       users.forEach((user) => {
