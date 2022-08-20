@@ -14,6 +14,18 @@ module.exports = {
     .setName("cleartransactions")
     .setDescription("Clears all transactions from the log."),
   async execute(interaction) {
+    if (interaction.guild === null) {
+      interaction.reply({
+        embeds: [
+          {
+            description: `This command is for servers only.`,
+            color: ERROR_COLOR,
+          },
+        ],
+      });
+      return;
+    }
+
     await interaction.deferReply();
 
     let db = await openDb();
@@ -21,10 +33,14 @@ module.exports = {
     sql = `SELECT userid FROM users WHERE userid = ? AND serverid = ? AND status = 1`;
     let validUser = await checkValidUser(interaction);
     if (validUser) {
-      let validChannel = await checkTransactionsChannel(
-        interaction.channelId,
-        interaction.guildId
-      );
+      let validChannel = null;
+      if (interaction.guild !== null) {
+        validChannel = await checkTransactionsChannel(
+          interaction.channelId,
+          interaction.guildId
+        );
+      }
+
       if (!validChannel) {
         (async function () {
           handleClear(interaction, interaction.user.id).then((result) => {

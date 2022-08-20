@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require("@discordjs/builders");
-const { MOOLAH_COLOR } = require("../constants.js");
+const { MOOLAH_COLOR, ERROR_COLOR } = require("../constants.js");
 const { openDb } = require("./../handlers/databaseHandler.js");
 
 module.exports = {
@@ -7,6 +7,18 @@ module.exports = {
     .setName("channellist")
     .setDescription("Displays a list of the assigned channel types."),
   async execute(interaction) {
+    if (interaction.guild === null) {
+      interaction.reply({
+        embeds: [
+          {
+            description: `This command is for servers only.`,
+            color: ERROR_COLOR,
+          },
+        ],
+      });
+      return;
+    }
+
     let db = await openDb();
     sql = `SELECT transactionsid, logid, alertsid FROM servers WHERE serverid = ?`;
     val = await db.get(sql, [interaction.guildId]);

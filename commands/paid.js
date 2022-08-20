@@ -58,6 +58,18 @@ module.exports = {
         )
     ),
   async execute(interaction) {
+    if (interaction.guild === null) {
+      interaction.reply({
+        embeds: [
+          {
+            description: `This command is for servers only.`,
+            color: ERROR_COLOR,
+          },
+        ],
+      });
+      return;
+    }
+
     await interaction.deferReply();
 
     let db = await openDb();

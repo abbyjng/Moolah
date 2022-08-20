@@ -56,6 +56,16 @@ module.exports = {
         interaction.channelId,
         interaction.guildId
       );
+      let validChannel = null;
+      if (interaction.guild !== null) {
+        validChannel = await checkTransactionsChannel(
+          interaction.channelId,
+          interaction.guildId
+        );
+      } else {
+        return;
+      }
+
       if (!validChannel) {
         if (cost <= 0) {
           interaction.editReply({

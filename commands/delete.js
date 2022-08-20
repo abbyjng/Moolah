@@ -33,6 +33,7 @@ module.exports = {
     await interaction.deferReply();
 
     let db = await openDb();
+    const isDM = interaction.guild === null;
 
     sql = `SELECT userid FROM users WHERE userid = ? AND serverid = ? AND status = 1`;
     let validUser = await checkValidUser(interaction);
@@ -41,6 +42,15 @@ module.exports = {
         interaction.channelId,
         interaction.guildId
       );
+      let validChannel = null;
+      if (!isDM) {
+        validChannel = await checkTransactionsChannel(
+          interaction.channelId,
+          interaction.guildId
+        );
+      } else {
+        return;
+      }
       if (!validChannel) {
         // get all transactions in this server
         sql = ` SELECT 

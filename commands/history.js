@@ -17,6 +17,9 @@ module.exports = {
     await interaction.deferReply();
 
     let db = await openDb();
+    if (interaction.guild === null) {
+      return;
+    }
 
     let validChannel = await checkTransactionsChannel(
       interaction.channelId,

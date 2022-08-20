@@ -16,10 +16,13 @@ module.exports = {
   async execute(interaction) {
     await interaction.deferReply();
 
-    let validChannel = await checkTransactionsChannel(
-      interaction.channelId,
-      interaction.guildId
-    );
+    let validChannel = null;
+    if (interaction.guild !== null) {
+      validChannel = await checkTransactionsChannel(
+        interaction.channelId,
+        interaction.guildId
+      );
+    }
     if (!validChannel) {
       interaction.editReply({ embeds: await getLogEmbeds(interaction.guild) });
     } else {
