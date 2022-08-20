@@ -41,6 +41,14 @@ module.exports = {
           `The description of the transaction [<${MAX_DESCRIPTION} chars]`
         )
         .setRequired(false)
+    )
+    .addStringOption((option) =>
+      option
+        .setName("category")
+        .setDescription(
+          `[DMs only] The category of the transaction; category must exist`
+        )
+        .setRequired(false)
     ),
   async execute(interaction) {
     await interaction.deferReply();
@@ -48,14 +56,20 @@ module.exports = {
     let db = await openDb();
     const cost = interaction.options.getNumber("cost");
     const description = interaction.options.getString("description");
+    let category = interaction.options.getString("category");
 
-    sql = `SELECT userid FROM users WHERE userid = ? AND serverid = ? AND status = 1`;
     let validUser = await checkValidUser(interaction);
     if (validUser) {
-      let validChannel = await checkTransactionsChannel(
-        interaction.channelId,
-        interaction.guildId
-      );
+      let validChannel = null;
+      if (interaction.guild !== null) {
+        validChannel = await checkTransactionsChannel(
+          interaction.channelId,
+          interaction.guildId
+        );
+      } else {
+        return;
+      }
+
       if (!validChannel) {
         if (cost <= 0) {
           interaction.editReply({
@@ -97,6 +111,38 @@ module.exports = {
             ],
             components: [],
           });
+        } else if (interaction.guild === null) {
+          category = category || "miscellaneous";
+
+          sql = `SELECT name FROM categories WHERE userid = ? AND name = ?`;
+          exists = (await db.get(sql, [interaction.user.id, category])) != null;
+          if (exists) {
+            sql = `INSERT INTO transactions (serverid, value, description, type, category)
+                                        VALUES (?, ?, ?, "DM", ?);`;
+            db.run(sql, [interaction.user.id, cost, description, category]);
+
+            confirmDMTransaction(interaction, cost, description, category);
+          } else {
+            interaction.editReply({
+              embeds: [
+                {
+                  color: ERROR_COLOR,
+                  description: `\`${category}\` is not a valid category. Create it by using \`/createcategory ${category}\`.`,
+                },
+              ],
+              components: [],
+            });
+          }
+        } else if (category) {
+          interaction.editReply({
+            embeds: [
+              {
+                color: ERROR_COLOR,
+                description: `Categories are currently only compatible with DM transaction tracking. Try out my personal transaction tracking by sending \`/setup\` in my DMs.`,
+              },
+            ],
+            components: [],
+          });
         } else {
           sql = `SELECT userid, emoji FROM users WHERE serverid = ? AND status = 1`;
           users = await db.all(sql, [interaction.guildId]);
@@ -110,8 +156,8 @@ module.exports = {
               description
             ).then((recipients) => {
               if (recipients[0] !== 0 && recipients[0] !== -1) {
-                sql = `INSERT INTO transactions (serverid, value, description)
-                                        VALUES (?, ?, ?);`;
+                sql = `INSERT INTO transactions (serverid, value, description, type, category)
+                                        VALUES (?, ?, ?, "SERVER", "");`;
                 db.run(sql, [
                   interaction.guildId,
                   cost / recipients.length,
@@ -219,7 +265,7 @@ async function handleTransaction(
                 collector.stop();
               } else {
                 t[(m.createdAt, authorid)].status = StatusEnum.GOOD;
-                confirmTransaction(
+                confirmServerTransaction(
                   interaction,
                   interaction.user.id,
                   t[(m.createdAt, authorid)].recipients,
@@ -390,7 +436,7 @@ function getInfoString(info, totalUsers) {
   return retStr;
 }
 
-function confirmTransaction(
+function confirmServerTransaction(
   interaction,
   ownerid,
   recipients,
@@ -411,6 +457,26 @@ function confirmTransaction(
   } else {
     msg += `**Message:** ${description}\n`;
   }
+  interaction.editReply({
+    embeds: [
+      {
+        title: `Transaction added!`,
+        color: SUCCESS_COLOR,
+        description: msg,
+      },
+    ],
+    components: [],
+  });
+}
+
+function confirmDMTransaction(interaction, value, description, category) {
+  msg = `Cost: **$${parseFloat(value).toFixed(2)}**\n`;
+  if (!description) {
+    msg += `Description: none\n`;
+  } else {
+    msg += `Description: **${description}**\n`;
+  }
+  msg += `Category: **${category}**`;
   interaction.editReply({
     embeds: [
       {

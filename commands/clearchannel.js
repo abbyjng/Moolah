@@ -1,7 +1,7 @@
 const Discord = require("discord.js");
 const { SlashCommandBuilder } = require("@discordjs/builders");
 const { openDb } = require("./../handlers/databaseHandler.js");
-const { SUCCESS_COLOR } = require("../constants.js");
+const { SUCCESS_COLOR, ERROR_COLOR } = require("../constants.js");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -17,6 +17,18 @@ module.exports = {
         .addChoice("alerts", "alerts")
     ),
   async execute(interaction) {
+    if (interaction.guild === null) {
+      interaction.reply({
+        embeds: [
+          {
+            description: `This command is for servers only.`,
+            color: ERROR_COLOR,
+          },
+        ],
+      });
+      return;
+    }
+
     let db = await openDb();
     const channelType = interaction.options.getString("channeltype");
 
