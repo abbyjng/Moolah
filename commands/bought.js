@@ -66,8 +66,6 @@ module.exports = {
           interaction.channelId,
           interaction.guildId
         );
-      } else {
-        return;
       }
 
       if (!validChannel) {
