@@ -117,6 +117,10 @@ module.exports = {
                     `DELETE FROM categories WHERE userid = ? AND name = ?;`,
                     [userid, name]
                   );
+                  db.run(
+                    `UPDATE transactions SET category = "miscellaneous" WHERE serverid = ? AND category = ?;`,
+                    [userid, name]
+                  );
                 }
               });
             });

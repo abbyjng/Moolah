@@ -45,9 +45,8 @@ module.exports = {
           interaction.channelId,
           interaction.guildId
         );
-      } else {
-        return;
       }
+
       if (!validChannel) {
         // get all transactions in this server
         sql = ` SELECT  
