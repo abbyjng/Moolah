@@ -2,7 +2,7 @@ const Discord = require("discord.js");
 const { MessageActionRow, MessageButton } = require("discord.js");
 const { SlashCommandBuilder } = require("@discordjs/builders");
 const { openDb } = require("./../handlers/databaseHandler.js");
-const { updateLog } = require("./../handlers/logHandler.js");
+const { updateLog, updateDMLog } = require("./../handlers/logHandler.js");
 const {
   checkValidUser,
   checkTransactionsChannel,
@@ -14,17 +14,7 @@ module.exports = {
     .setName("cleartransactions")
     .setDescription("Clears all transactions from the log."),
   async execute(interaction) {
-    if (interaction.guild === null) {
-      interaction.reply({
-        embeds: [
-          {
-            description: `This command is for servers only.`,
-            color: ERROR_COLOR,
-          },
-        ],
-      });
-      return;
-    }
+    const isDM = interaction.guild === null;
 
     await interaction.deferReply();
 
@@ -34,7 +24,7 @@ module.exports = {
     let validUser = await checkValidUser(interaction);
     if (validUser) {
       let validChannel = null;
-      if (interaction.guild !== null) {
+      if (!isDM) {
         validChannel = await checkTransactionsChannel(
           interaction.channelId,
           interaction.guildId
@@ -43,16 +33,24 @@ module.exports = {
 
       if (!validChannel) {
         (async function () {
-          handleClear(interaction, interaction.user.id).then((result) => {
+          handleClear(interaction, isDM).then((result) => {
             if (result === 1) {
-              db.run(`DELETE FROM transactions WHERE serverid = ?;`, [
-                interaction.guildId,
-              ]).then(() => {
-                updateLog(interaction.guild);
-              });
-              db.run(`DELETE FROM transactionhands WHERE serverid = ?;`, [
-                interaction.guildId,
-              ]);
+              if (isDM) {
+                db.run(`DELETE FROM transactions WHERE serverid = ?;`, [
+                  interaction.user.id,
+                ]).then(() => {
+                  updateDMLog(interaction.user, interaction.channel);
+                });
+              } else {
+                db.run(`DELETE FROM transactions WHERE serverid = ?;`, [
+                  interaction.guildId,
+                ]).then(() => {
+                  updateLog(interaction.guild);
+                });
+                db.run(`DELETE FROM transactionhands WHERE serverid = ?;`, [
+                  interaction.guildId,
+                ]);
+              }
             }
           });
         })();
@@ -70,7 +68,7 @@ module.exports = {
   },
 };
 
-async function handleClear(interaction, authorid) {
+async function handleClear(interaction, isDM) {
   return new Promise((resolve, reject) => {
     const buttons = new MessageActionRow().addComponents(
       new MessageButton()
@@ -86,7 +84,9 @@ async function handleClear(interaction, authorid) {
     embed = new Discord.MessageEmbed()
       .setColor(MOOLAH_COLOR)
       .setDescription(
-        `**Warning:** By confirming this action, all transactions logged in this server will be permanently deleted. Do you wish to continue?`
+        `**Warning:** By confirming this action, all transactions logged  ${
+          isDM ? "for this user" : "in this server"
+        } will be permanently deleted. Do you wish to continue?`
       );
     interaction
       .editReply({ embeds: [embed], components: [buttons] })
