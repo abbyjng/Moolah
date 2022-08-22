@@ -2,6 +2,7 @@ const { SlashCommandBuilder } = require("@discordjs/builders");
 const { ERROR_COLOR, SUCCESS_COLOR, MAX_CATEGORY } = require("../constants");
 const { checkValidUser } = require("./../handlers/permissionHandler.js");
 const { openDb } = require("../handlers/databaseHandler");
+const { updateDMLog } = require("../handlers/logHandler");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -53,31 +54,46 @@ module.exports = {
         ],
       });
     } else {
-      let validUser = await checkValidUser(interaction);
-      if (validUser) {
-        sql = `SELECT name FROM categories WHERE userid = ? AND name = ?`;
-        existingCategory = await db.get(sql, [userid, oldName]);
-        if (existingCategory) {
-          sql = `UPDATE categories SET name = ? WHERE userid = ? AND name = ?;`;
-          db.run(sql, [newName, userid, oldName]);
+      sql = `SELECT name FROM categories WHERE userid = ? AND name = ?`;
+      newNameExists = await db.get(sql, [userid, newName]);
+      if (newNameExists) {
+        interaction.reply({
+          embeds: [
+            {
+              description: `The category \`${newName}\` already exists.`,
+              color: ERROR_COLOR,
+            },
+          ],
+        });
+      } else {
+        let validUser = await checkValidUser(interaction);
+        if (validUser) {
+          sql = `SELECT name FROM categories WHERE userid = ? AND name = ?`;
+          existingCategory = await db.get(sql, [userid, oldName]);
+          if (existingCategory) {
+            sql = `UPDATE categories SET name = ? WHERE userid = ? AND name = ?;`;
+            db.run(sql, [newName, userid, oldName]);
 
-          interaction.reply({
-            embeds: [
-              {
-                description: `The category \`${oldName}\` has successfully been changed to \`${newName}\`.`,
-                color: SUCCESS_COLOR,
-              },
-            ],
-          });
-        } else {
-          interaction.reply({
-            embeds: [
-              {
-                description: `A category with the name \`${oldName}\` doesn't exist.`,
-                color: ERROR_COLOR,
-              },
-            ],
-          });
+            updateDMLog(interaction.user, interaction.channel);
+
+            interaction.reply({
+              embeds: [
+                {
+                  description: `The category \`${oldName}\` has successfully been changed to \`${newName}\`.`,
+                  color: SUCCESS_COLOR,
+                },
+              ],
+            });
+          } else {
+            interaction.reply({
+              embeds: [
+                {
+                  description: `A category with the name \`${oldName}\` doesn't exist.`,
+                  color: ERROR_COLOR,
+                },
+              ],
+            });
+          }
         }
       }
     }

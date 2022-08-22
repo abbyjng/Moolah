@@ -3,7 +3,12 @@ const auth = require("./auth.json");
 const fs = require("fs");
 
 const { openDb } = require("./handlers/databaseHandler.js");
-const { updateLog } = require("./handlers/logHandler.js");
+const {
+  updateLog,
+  getButtonMonths,
+  getDMLogButtons,
+  getDMLogEmbed,
+} = require("./handlers/logHandler.js");
 const { MOOLAH_COLOR, ERROR_COLOR } = require("./constants.js");
 
 let db;
@@ -58,7 +63,26 @@ client.on("ready", async () => {
 
 client.on("interactionCreate", async (interaction) => {
   if (interaction.isButton()) {
-    interaction.deferUpdate();
+    // interaction.deferUpdate();
+    const userid = interaction.user.id;
+    const { customId } = interaction;
+    const split = customId.split(" ", 3);
+    if (split[0] === "DMLOG") {
+      const month = parseInt(split[1]);
+      const year = parseInt(split[2]);
+      const b = await getButtonMonths(userid, month, year);
+      interaction.update({
+        embeds: [await getDMLogEmbed(userid, month, year)],
+        components: [
+          await getDMLogButtons(
+            b.firstMonth,
+            b.prevMonth,
+            b.nextMonth,
+            b.latestMonth
+          ),
+        ],
+      });
+    }
   }
   if (!interaction.isCommand()) return;
 

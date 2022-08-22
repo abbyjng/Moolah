@@ -2,7 +2,7 @@ const Discord = require("discord.js");
 const { MessageActionRow, MessageButton } = require("discord.js");
 const { SlashCommandBuilder } = require("@discordjs/builders");
 const { openDb } = require("./../handlers/databaseHandler.js");
-const { updateLog } = require("./../handlers/logHandler.js");
+const { updateLog, updateDMLog } = require("./../handlers/logHandler.js");
 const {
   checkValidUser,
   checkTransactionsChannel,
@@ -118,6 +118,8 @@ module.exports = {
             sql = `INSERT INTO transactions (serverid, value, description, type, category)
                                         VALUES (?, ?, ?, "DM", ?);`;
             db.run(sql, [interaction.user.id, cost, description, category]);
+
+            updateDMLog(interaction.user, interaction.channel);
 
             confirmDMTransaction(interaction, cost, description, category);
           } else {
