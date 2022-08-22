@@ -7,6 +7,7 @@ const {
 } = require("../constants");
 const { checkValidUser } = require("./../handlers/permissionHandler.js");
 const { openDb } = require("../handlers/databaseHandler");
+const { updateDMLog } = require("../handlers/logHandler");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -64,6 +65,7 @@ module.exports = {
             sql = `INSERT INTO categories (userid, name) 
                         VALUES (?, ?);`;
             db.run(sql, [userid, name]);
+            updateDMLog(interaction.user, interaction.channel);
 
             interaction.reply({
               embeds: [

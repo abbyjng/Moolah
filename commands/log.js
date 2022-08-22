@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require("@discordjs/builders");
 const { ERROR_COLOR } = require("../constants.js");
-const { getLogEmbeds } = require("./../handlers/logHandler.js");
+const { getLogEmbeds, getDMLogEmbed } = require("./../handlers/logHandler.js");
 const {
   checkTransactionsChannel,
 } = require("./../handlers/permissionHandler.js");
@@ -22,6 +22,21 @@ module.exports = {
         interaction.channelId,
         interaction.guildId
       );
+    } else {
+      const now = new Date();
+      const embed = await getDMLogEmbed(
+        interaction.user.id,
+        now.getMonth() + 1,
+        now.getFullYear()
+      );
+      embed.footer = {
+        text: "To view all previous months, jump to the pinned log message and use the buttons to scroll.",
+      };
+
+      interaction.editReply({
+        embeds: [embed],
+      });
+      return;
     }
     if (!validChannel) {
       interaction.editReply({ embeds: await getLogEmbeds(interaction.guild) });

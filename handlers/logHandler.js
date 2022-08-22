@@ -1,5 +1,6 @@
 const { MOOLAH_COLOR } = require("../constants.js");
 const { openDb } = require("./databaseHandler.js");
+const { MessageActionRow, MessageButton } = require("discord.js");
 
 let db;
 
@@ -7,6 +8,10 @@ module.exports = {
   updateLog,
   getLogEmbeds,
   getLogDict,
+  getDMLogEmbed,
+  updateDMLog,
+  getButtonMonths,
+  getDMLogButtons,
 };
 
 async function updateLog(server, newchannel = "") {
@@ -161,4 +166,204 @@ async function getLogDict(users, serverid) {
       resolve(log);
     });
   });
+}
+
+async function getDMLogEmbed(userid, month, year) {
+  db = await openDb();
+  embeds = [];
+  return new Promise((resolve, reject) => {
+    sql = `SELECT name FROM categories WHERE userid = ?`;
+    db.all(sql, [userid]).then((categories) => {
+      const date = new Date(year, month - 1, 1);
+      const title = date.toLocaleString("en-US", {
+        month: "long",
+        year: "numeric",
+      });
+      getDMLogDict(userid, categories, month, year).then((log) => {
+        if (!log) {
+          resolve({
+            color: MOOLAH_COLOR,
+            title: title,
+            description: `No transactions available.`,
+          });
+        }
+
+        let descString = "";
+        for (category in log) {
+          descString += `**${category}:** $${log[category].toFixed(2)}\n`;
+        }
+
+        var embed = {
+          title: title,
+          description: descString,
+          color: MOOLAH_COLOR,
+          footer: {
+            text: "Use the buttons to view other months.",
+          },
+        };
+        resolve(embed);
+      });
+    });
+  });
+}
+
+async function getDMLogDict(userid, categories, month, year) {
+  db = await openDb();
+  return new Promise((resolve, reject) => {
+    log = {};
+
+    categories.forEach((category) => {
+      log[category.name] = 0;
+    });
+
+    sql = `SELECT value, category, created FROM transactions WHERE serverid = ? AND created >= ? AND created < ?`;
+    db.all(sql, [userid, ...monthStartAndEnd(month, year)]).then(
+      (transactions) => {
+        if (transactions.length === 0) {
+          resolve(null);
+        }
+
+        transactions.forEach((t) => {
+          log[t.category] += t.value;
+        });
+
+        resolve(log);
+      }
+    );
+  });
+}
+
+async function updateDMLog(user, channel) {
+  db = await openDb();
+  sql = `SELECT logembed FROM dms WHERE userid = ?`;
+  data = await db.get(sql, [user.id]);
+
+  channel.messages
+    .fetch(data.logembed)
+    .then((oldEmbed) => {
+      (async function () {
+        const now = new Date();
+        month = now.getMonth() + 1;
+        year = now.getFullYear();
+        const newEmbed = await getDMLogEmbed(user.id, month, year);
+        const b = await getButtonMonths(user.id, month, year);
+        if (!oldEmbed) {
+          // in case something breaks in sending the original embed somehow
+          user
+            .send({
+              embeds: [newEmbed],
+              components: [
+                await getDMLogButtons(
+                  b.firstMonth,
+                  b.prevMonth,
+                  b.nextMonth,
+                  b.latestMonth
+                ),
+              ],
+            })
+            .then((m) => {
+              sql = `UPDATE dms SET logembed = ? WHERE userid = ?;`;
+              db.run(sql, [m.id, user.id]);
+            });
+        } else {
+          oldEmbed.edit({
+            embeds: [newEmbed],
+            components: [
+              await getDMLogButtons(
+                b.firstMonth,
+                b.prevMonth,
+                b.nextMonth,
+                b.latestMonth
+              ),
+            ],
+          });
+        }
+      })();
+    })
+    .catch(console.error);
+}
+
+async function getButtonMonths(userid, month, year) {
+  db = await openDb();
+  return new Promise((resolve, reject) => {
+    sql = `SELECT created FROM transactions WHERE serverid = ? ORDER BY created ASC LIMIT 1`;
+    db.get(sql, [userid]).then((oldestTransaction) => {
+      // no transactions exist
+      if (oldestTransaction === undefined) {
+        resolve({
+          firstMonth: "",
+          prevMonth: "",
+          nextMonth: "",
+          latestMonth: "",
+        });
+      }
+      const now = new Date();
+      const selectedMonth = `${month} ${year}`;
+      let firstMonth = formatSQLDate(oldestTransaction.created);
+      let prevMonth = month === 1 ? `12 ${year - 1}` : `${month - 1} ${year}`;
+      let nextMonth = month === 12 ? `1 ${year + 1}` : `${month + 1} ${year}`;
+      let currMonth = `${now.getMonth() + 1} ${now.getFullYear()}`;
+
+      if (firstMonth === selectedMonth) {
+        firstMonth = "";
+        prevMonth = "";
+      }
+
+      if (currMonth === selectedMonth) {
+        nextMonth = "";
+        currMonth = "";
+      }
+
+      resolve({
+        firstMonth:
+          firstMonth === "" ? firstMonth : `DMLOG ${firstMonth} full_back`,
+        prevMonth: prevMonth === "" ? prevMonth : `DMLOG ${prevMonth} back`,
+        nextMonth: nextMonth === "" ? nextMonth : `DMLOG ${nextMonth} front`,
+        latestMonth:
+          currMonth === "" ? currMonth : `DMLOG ${currMonth} full_front`,
+      });
+    });
+  });
+}
+
+async function getDMLogButtons(firstMonth, prevMonth, nextMonth, latestMonth) {
+  return new MessageActionRow().addComponents(
+    new MessageButton()
+      .setCustomId(firstMonth !== "" ? firstMonth : "full_back")
+      .setEmoji("⏮️")
+      .setStyle("SECONDARY")
+      .setDisabled(firstMonth === ""),
+    new MessageButton()
+      .setCustomId(prevMonth !== "" ? prevMonth : "back")
+      .setEmoji("◀️")
+      .setStyle("SECONDARY")
+      .setDisabled(prevMonth === ""),
+    new MessageButton()
+      .setCustomId(nextMonth !== "" ? nextMonth : "front")
+      .setEmoji("▶️")
+      .setStyle("SECONDARY")
+      .setDisabled(nextMonth === ""),
+    new MessageButton()
+      .setCustomId(latestMonth !== "" ? latestMonth : "full_front")
+      .setEmoji("⏭️")
+      .setStyle("SECONDARY")
+      .setDisabled(latestMonth === "")
+  );
+}
+
+function monthStartAndEnd(month, year) {
+  const start = `${year}-${month.toString().padStart(2, "0")}-01`;
+  if (month === 12) {
+    month = 1;
+    year += 1;
+  } else {
+    month += 1;
+  }
+  const end = `${year}-${month.toString().padStart(2, "0")}-01`;
+  return [start, end];
+}
+
+function formatSQLDate(date) {
+  const splitDate = date.split("-", 2);
+  return `${parseInt(splitDate[1])} ${splitDate[0]}`;
 }

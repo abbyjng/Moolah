@@ -4,6 +4,7 @@ const { SlashCommandBuilder } = require("@discordjs/builders");
 const { checkValidUser } = require("./../handlers/permissionHandler.js");
 const { openDb } = require("./../handlers/databaseHandler.js");
 const { ERROR_COLOR, MOOLAH_COLOR, SUCCESS_COLOR } = require("../constants.js");
+const { updateDMLog } = require("../handlers/logHandler.js");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -104,6 +105,17 @@ module.exports = {
                 } else if (
                   collected.entries().next().value[1].customId === "confirm"
                 ) {
+                  db.run(
+                    `DELETE FROM categories WHERE userid = ? AND name = ?;`,
+                    [userid, name]
+                  );
+                  db.run(
+                    `UPDATE transactions SET category = "miscellaneous" WHERE serverid = ? AND category = ?;`,
+                    [userid, name]
+                  );
+
+                  updateDMLog(interaction.user, interaction.channel);
+
                   interaction.editReply({
                     embeds: [
                       {
@@ -113,14 +125,6 @@ module.exports = {
                     ],
                     components: [],
                   });
-                  db.run(
-                    `DELETE FROM categories WHERE userid = ? AND name = ?;`,
-                    [userid, name]
-                  );
-                  db.run(
-                    `UPDATE transactions SET category = "miscellaneous" WHERE serverid = ? AND category = ?;`,
-                    [userid, name]
-                  );
                 }
               });
             });
