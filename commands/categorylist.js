@@ -11,25 +11,36 @@ module.exports = {
     let db = await openDb();
     const userid = interaction.user.id;
 
-    let validUser = await checkValidUser(interaction);
-    if (validUser) {
-      sql = `SELECT name FROM categories WHERE userid = ?`;
-      categories = await db.all(sql, [userid]);
-
-      categoriesStr = "";
-      categories.forEach((row) => {
-        categoriesStr += ` • ${row.name}\n`;
-      });
-
+    if (interaction.guild !== null) {
       interaction.reply({
         embeds: [
           {
-            color: MOOLAH_COLOR,
-            title: "Category list",
-            description: categoriesStr,
+            description: `This command is for DMs only.`,
+            color: ERROR_COLOR,
           },
         ],
       });
+    } else {
+      let validUser = await checkValidUser(interaction);
+      if (validUser) {
+        sql = `SELECT name FROM categories WHERE userid = ?`;
+        categories = await db.all(sql, [userid]);
+
+        categoriesStr = "";
+        categories.forEach((row) => {
+          categoriesStr += ` • ${row.name}\n`;
+        });
+
+        interaction.reply({
+          embeds: [
+            {
+              color: MOOLAH_COLOR,
+              title: "Category list",
+              description: categoriesStr,
+            },
+          ],
+        });
+      }
     }
   },
 };

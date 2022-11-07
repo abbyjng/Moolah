@@ -20,7 +20,7 @@ async function checkValidUser(interaction) {
         if (val) {
           resolve(true);
         } else {
-          interaction.editReply({
+          interaction.reply({
             embeds: [
               {
                 description: `Personal transaction tracking is not set up for your account yet. Run \`/setupPersonal\` to set it up or \`/personalHelp\` for more information.`,

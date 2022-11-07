@@ -296,6 +296,7 @@ async function getButtonMonths(userid, month, year) {
           nextMonth: "",
           latestMonth: "",
         });
+        return;
       }
       const now = new Date();
       const selectedMonth = `${month} ${year}`;
