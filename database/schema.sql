@@ -38,7 +38,8 @@ CREATE TABLE IF NOT EXISTS transactionhands(
 
 CREATE TABLE IF NOT EXISTS dms(
     userid TEXT PRIMARY KEY,
-    logembed TEXT
+    logembed TEXT,
+    shared INTEGER DEFAULT 1 NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS categories(

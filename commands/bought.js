@@ -172,7 +172,55 @@ module.exports = {
                         transactionid.lastID,
                         interaction.user.id,
                         recipient.userid,
-                      ]);
+                      ]).then(() => {
+                        sql = `SELECT shared FROM dms WHERE userid = ?;`;
+                        db.get(sql, [recipient.userid]).then((dmUser) => {
+                          if (dmUser && dmUser.shared == 1) {
+                            sql = `INSERT INTO transactions (serverid, value, description, type, category)
+                                                     VALUES (?, ?, ?, "DM", "miscellaneous");`;
+                            db.run(sql, [
+                              recipient.userid,
+                              cost / recipients.length,
+                              `"${description}" from "${interaction.guild.name}"`,
+                            ]).then(() => {
+                              interaction.guild.members
+                                .fetch(recipient.userid)
+                                .then((userToAddTransaction) => {
+                                  userToAddTransaction.user
+                                    .createDM()
+                                    .then((dmChannel) => {
+                                      updateDMLog(
+                                        userToAddTransaction,
+                                        dmChannel
+                                      );
+
+                                      userToAddTransaction.user
+                                        .send({
+                                          embeds: [
+                                            {
+                                              description: `New transaction: ${
+                                                description
+                                                  ? `"${description}"`
+                                                  : "(no description)"
+                                              } from server "${
+                                                interaction.guild.name
+                                              }", costing $${
+                                                cost / recipients.length
+                                              }`,
+                                              color: SUCCESS_COLOR,
+                                            },
+                                          ],
+                                        })
+                                        .catch(() => {
+                                          let sql = `DELETE FROM users WHERE userid = ?`;
+                                          db.run(sql, [member.id]);
+                                        });
+                                    });
+                                });
+                            });
+                          }
+                        });
+                      });
                     });
                     updateLog(interaction.guild);
                   });
