@@ -6,3 +6,4 @@ auth.json
 dump.rdb
 database/database.db
 test*
+sqlite3
