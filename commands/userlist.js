@@ -9,6 +9,18 @@ module.exports = {
       "Displays a list of registered users and their corresponding emojis."
     ),
   async execute(interaction) {
+    if (interaction.guild === null) {
+      interaction.reply({
+        embeds: [
+          {
+            description: `This command is for servers only.`,
+            color: ERROR_COLOR,
+          },
+        ],
+      });
+      return;
+    }
+
     let db = await openDb();
     sql = `SELECT userid, emoji FROM users WHERE serverid = ? AND status = 1`;
     activeUsers = await db.all(sql, [interaction.guildId]);

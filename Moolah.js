@@ -3,7 +3,12 @@ const auth = require("./auth.json");
 const fs = require("fs");
 
 const { openDb } = require("./handlers/databaseHandler.js");
-const { updateLog } = require("./handlers/logHandler.js");
+const {
+  updateLog,
+  getButtonMonths,
+  getDMLogButtons,
+  getDMLogEmbed,
+} = require("./handlers/logHandler.js");
 const { MOOLAH_COLOR, ERROR_COLOR } = require("./constants.js");
 
 let db;
@@ -13,10 +18,10 @@ const intents = [
   Intents.FLAGS.GUILDS,
   Intents.FLAGS.GUILD_MEMBERS,
   Intents.FLAGS.GUILD_MESSAGES,
-  Intents.FLAGS.GUILD_MESSAGE_REACTIONS,
   Intents.FLAGS.GUILD_EMOJIS_AND_STICKERS,
+  Intents.FLAGS.DIRECT_MESSAGES,
 ];
-const partials = ["GUILD_MEMBER"];
+const partials = ["GUILD_MEMBER", "CHANNEL"];
 const client = new Client({
   intents: intents,
   partials: partials,
@@ -58,7 +63,26 @@ client.on("ready", async () => {
 
 client.on("interactionCreate", async (interaction) => {
   if (interaction.isButton()) {
-    interaction.deferUpdate();
+    // interaction.deferUpdate();
+    const userid = interaction.user.id;
+    const { customId } = interaction;
+    const split = customId.split(" ", 3);
+    if (split[0] === "DMLOG") {
+      const month = parseInt(split[1]);
+      const year = parseInt(split[2]);
+      const b = await getButtonMonths(userid, month, year);
+      interaction.update({
+        embeds: [await getDMLogEmbed(userid, month, year)],
+        components: [
+          await getDMLogButtons(
+            b.firstMonth,
+            b.prevMonth,
+            b.nextMonth,
+            b.latestMonth
+          ),
+        ],
+      });
+    }
   }
   if (!interaction.isCommand()) return;
 
@@ -83,8 +107,8 @@ client.on("guildCreate", async function (server) {
   existingServer = await db.get(sql, [server.id]);
   if (!existingServer) {
     // add server to the database
-    sql = `INSERT INTO servers (serverid, transactionsid, logid, alertsid) 
-                        VALUES (?, "", "", "");`;
+    sql = `INSERT INTO servers (serverid, transactionsid, logid, alertsid, logembed) 
+                        VALUES (?, "", "", "", "");`;
     db.run(sql, [server.id.toString()]);
   }
 

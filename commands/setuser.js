@@ -25,6 +25,18 @@ module.exports = {
         .setRequired(true)
     ),
   async execute(interaction) {
+    if (interaction.guild === null) {
+      interaction.reply({
+        embeds: [
+          {
+            description: `This command is for servers only.`,
+            color: ERROR_COLOR,
+          },
+        ],
+      });
+      return;
+    }
+
     let db = await openDb();
     const user = interaction.options.getUser("user");
     const emojiStr = interaction.options.getString("emoji");

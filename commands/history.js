@@ -17,6 +17,29 @@ module.exports = {
     await interaction.deferReply();
 
     let db = await openDb();
+    const userid = interaction.user.id;
+
+    if (interaction.guild === null) {
+      sql = ` SELECT 
+                        value, 
+                        description, 
+                        category,
+                        CAST(strftime('%s', created) AS INT) AS created 
+                    FROM 
+                        transactions 
+                    WHERE 
+                        serverid = ?`;
+
+      transactions = await db.all(sql, [userid]);
+      entriesPerScreen = Math.min(Math.floor(10), 10);
+      transactions.sort(function (a, b) {
+        if (a.created > b.created) return 1;
+        else return -1;
+      });
+
+      handleLog(interaction, transactions, userid, entriesPerScreen, true);
+      return;
+    }
 
     let validChannel = await checkTransactionsChannel(
       interaction.channelId,
@@ -28,7 +51,7 @@ module.exports = {
                         transactionid, 
                         value, 
                         description, 
-                        created 
+                        CAST(strftime('%s', created) AS INT) AS created 
                     FROM 
                         transactions 
                     WHERE 
@@ -85,7 +108,8 @@ module.exports = {
               interaction,
               tlist,
               interaction.user.id,
-              entriesPerScreen
+              entriesPerScreen,
+              false
             );
           }
         });
@@ -111,7 +135,13 @@ function noTransactions(interaction) {
   interaction.editReply({ embeds: [embed] });
 }
 
-function handleLog(interaction, transactions, authorid, entriesPerScreen) {
+function handleLog(
+  interaction,
+  transactions,
+  authorid,
+  entriesPerScreen,
+  isDM
+) {
   const all_active_buttons = new MessageActionRow().addComponents(
     new MessageButton()
       .setCustomId("full_down")
@@ -167,6 +197,29 @@ function handleLog(interaction, transactions, authorid, entriesPerScreen) {
       .setStyle("SECONDARY")
   );
 
+  const no_active_buttons = new MessageActionRow().addComponents(
+    new MessageButton()
+      .setCustomId("full_down")
+      .setEmoji("⏬")
+      .setStyle("SECONDARY")
+      .setDisabled(true),
+    new MessageButton()
+      .setCustomId("down")
+      .setEmoji("⬇️")
+      .setStyle("SECONDARY")
+      .setDisabled(true),
+    new MessageButton()
+      .setCustomId("up")
+      .setEmoji("⬆️")
+      .setStyle("SECONDARY")
+      .setDisabled(true),
+    new MessageButton()
+      .setCustomId("full_up")
+      .setEmoji("⏫")
+      .setStyle("SECONDARY")
+      .setDisabled(true)
+  );
+
   embed = new Discord.MessageEmbed()
     .setTitle(`Transaction log`)
     .setColor(MOOLAH_COLOR)
@@ -174,11 +227,19 @@ function handleLog(interaction, transactions, authorid, entriesPerScreen) {
       getLogMessage(
         transactions,
         Math.max(transactions.length - entriesPerScreen, 0),
-        entriesPerScreen
+        entriesPerScreen,
+        isDM
       )
     );
   interaction
-    .editReply({ embeds: [embed], components: [bottom_buttons] })
+    .editReply({
+      embeds: [embed],
+      components: [
+        transactions.length <= entriesPerScreen
+          ? no_active_buttons
+          : bottom_buttons,
+      ],
+    })
     .then((m) => {
       l[(m.createdAt, authorid)] = transactions.length - entriesPerScreen;
       const filter = (i) => true;
@@ -199,8 +260,9 @@ function handleLog(interaction, transactions, authorid, entriesPerScreen) {
             .setDescription(
               getLogMessage(
                 transactions,
-                transactions.length - entriesPerScreen,
-                entriesPerScreen
+                Math.max(transactions.length - entriesPerScreen, 0),
+                entriesPerScreen,
+                isDM
               )
             );
           m.edit({ embeds: [newEmbed], components: [bottom_buttons] });
@@ -215,9 +277,10 @@ function handleLog(interaction, transactions, authorid, entriesPerScreen) {
                 transactions,
                 Math.min(
                   l[(m.createdAt, authorid)] + entriesPerScreen,
-                  transactions.length - entriesPerScreen
+                  Math.max(transactions.length - entriesPerScreen, 0)
                 ),
-                entriesPerScreen
+                entriesPerScreen,
+                isDM
               )
             );
           let new_pos = Math.min(
@@ -239,7 +302,8 @@ function handleLog(interaction, transactions, authorid, entriesPerScreen) {
               getLogMessage(
                 transactions,
                 Math.max(l[(m.createdAt, authorid)] - entriesPerScreen, 0),
-                entriesPerScreen
+                entriesPerScreen,
+                isDM
               )
             );
           let new_pos = Math.max(
@@ -257,7 +321,9 @@ function handleLog(interaction, transactions, authorid, entriesPerScreen) {
           newEmbed = new Discord.MessageEmbed()
             .setTitle(`Transaction log`)
             .setColor(MOOLAH_COLOR)
-            .setDescription(getLogMessage(transactions, 0, entriesPerScreen));
+            .setDescription(
+              getLogMessage(transactions, 0, entriesPerScreen, isDM)
+            );
           m.edit({ embeds: [newEmbed], components: [top_buttons] });
           l[(m.createdAt, authorid)] = 0;
         }
@@ -279,7 +345,8 @@ function handleLog(interaction, transactions, authorid, entriesPerScreen) {
             getLogMessage(
               transactions,
               l[(m.createdAt, authorid)],
-              entriesPerScreen
+              entriesPerScreen,
+              isDM
             )
           );
         m.edit({ embeds: [newEmbed], components: [] });
@@ -287,56 +354,63 @@ function handleLog(interaction, transactions, authorid, entriesPerScreen) {
     });
 }
 
-function getLogMessage(transactions, startIndex, entriesPerScreen) {
+function getLogMessage(transactions, startIndex, entriesPerScreen, isDM) {
   retStr = ``;
-  for (
-    var i = startIndex;
-    i < Math.min(startIndex + entriesPerScreen, transactions.length);
-    ++i
-  ) {
-    if (transactions[i].description == "defaultPaidDescription") {
-      // paid
-      retStr += `${i + 1}) <@!${transactions[i].owner}> paid ${
-        transactions[i].emojis[0]
-      } `;
-      retStr += `[$${transactions[i].value.toFixed(2)}] | ${getFormattedDate(
-        transactions[i].created
-      )}\n`;
-    } else if (transactions[i].value < 0) {
-      // owe
-      retStr += `${i + 1}) <@!${transactions[i].owner}> owes ${
-        transactions[i].emojis[0]
-      } `;
-      retStr += `[$${(-transactions[i].value).toFixed(2)}] `;
-      if (transactions[i].description) {
-        retStr += `"${transactions[i].description}" `;
-      }
-      retStr += `| ${getFormattedDate(transactions[i].created)}\n`;
-    } else {
-      // bought
-      retStr += `${i + 1}) <@!${transactions[i].owner}> → `;
-      transactions[i].emojis.forEach((emoji) => {
-        retStr += emoji;
-      });
-      if (transactions[i].emojis.length > 1) {
-        retStr += ` [$${transactions[i].value.toFixed(2)}ea] `;
+  if (!isDM) {
+    for (
+      var i = startIndex;
+      i < Math.min(startIndex + entriesPerScreen, transactions.length);
+      ++i
+    ) {
+      if (transactions[i].description == "defaultPaidDescription") {
+        // paid
+        retStr += `${i + 1}) <@!${transactions[i].owner}> paid ${
+          transactions[i].emojis[0]
+        } `;
+        retStr += `[$${transactions[i].value.toFixed(2)}] | <t:${
+          transactions[i].created
+        }:d>\n`;
+      } else if (transactions[i].value < 0) {
+        // owe
+        retStr += `${i + 1}) <@!${transactions[i].owner}> owes ${
+          transactions[i].emojis[0]
+        } `;
+        retStr += `[$${(-transactions[i].value).toFixed(2)}] `;
+        if (transactions[i].description) {
+          retStr += `"${transactions[i].description}" `;
+        }
+        retStr += `| <t:${transactions[i].created}:d>\n`;
       } else {
-        retStr += ` [$${transactions[i].value.toFixed(2)}] `;
+        // bought
+        retStr += `${i + 1}) <@!${transactions[i].owner}> → `;
+        transactions[i].emojis.forEach((emoji) => {
+          retStr += emoji;
+        });
+        if (transactions[i].emojis.length > 1) {
+          retStr += ` [$${transactions[i].value.toFixed(2)}ea] `;
+        } else {
+          retStr += ` [$${transactions[i].value.toFixed(2)}] `;
+        }
+        if (transactions[i].description) {
+          retStr += `"${transactions[i].description}" `;
+        }
+        retStr += `| <t:${transactions[i].created}:d>\n`;
       }
+    }
+  } else {
+    for (
+      var i = startIndex;
+      i < Math.min(startIndex + entriesPerScreen, transactions.length);
+      ++i
+    ) {
+      retStr += `${i + 1}) $${transactions[i].value.toFixed(2)}`;
       if (transactions[i].description) {
-        retStr += `"${transactions[i].description}" `;
+        retStr += ` for "${transactions[i].description}"`;
       }
-      retStr += `| ${getFormattedDate(transactions[i].created)}\n`;
+      retStr += ` in category \`${transactions[i].category}\``;
+      retStr += ` | <t:${transactions[i].created}:d>\n`;
     }
   }
 
   return retStr;
-}
-
-function getFormattedDate(date) {
-  date = new Date(date + "Z");
-  d = date.getDate();
-  m = date.getMonth() + 1;
-  y = date.getFullYear();
-  return m + "-" + (d <= 9 ? "0" + d : d) + "-" + y;
 }

@@ -49,6 +49,18 @@ module.exports = {
         .setRequired(false)
     ),
   async execute(interaction) {
+    if (interaction.guild === null) {
+      interaction.reply({
+        embeds: [
+          {
+            description: `This command is for servers only.`,
+            color: ERROR_COLOR,
+          },
+        ],
+      });
+      return;
+    }
+
     await interaction.deferReply();
 
     let db = await openDb();
@@ -107,8 +119,8 @@ module.exports = {
               description
             ).then((recipient) => {
               if (recipient !== 0 && recipient !== -1) {
-                sql = `INSERT INTO transactions (serverid, value, description)
-                                        VALUES (?, ?, ?)`;
+                sql = `INSERT INTO transactions (serverid, value, description, type, category)
+                                        VALUES (?, ?, ?, "SERVER", "");`;
                 db.run(sql, [interaction.guildId, -cost, description]).then(
                   () => {
                     db.run("SELECT last_insert_rowid()").then(
@@ -157,8 +169,8 @@ module.exports = {
           } else {
             let userid = user.id;
             // insert into transactions
-            sql = `INSERT INTO transactions (serverid, value, description)
-                                VALUES (?, ?, ?)`;
+            sql = `INSERT INTO transactions (serverid, value, description, type, category)
+                                        VALUES (?, ?, ?, "SERVER", "");`;
             db.run(sql, [interaction.guildId, -cost, description]).then(() => {
               db.run("SELECT last_insert_rowid()").then((transactionid) => {
                 sql = `INSERT INTO transactionhands (serverid, transactionid, owner, recipient)
