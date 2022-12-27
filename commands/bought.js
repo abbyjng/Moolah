@@ -204,9 +204,9 @@ module.exports = {
                                                   : "(no description)"
                                               } from server "${
                                                 interaction.guild.name
-                                              }", costing $${
+                                              }", costing $${(
                                                 cost / recipients.length
-                                              }`,
+                                              ).toFixed(2)}`,
                                               color: SUCCESS_COLOR,
                                             },
                                           ],

@@ -12,9 +12,11 @@ module.exports = {
         .setName("channeltype")
         .setDescription("The type of channel being cleared")
         .setRequired(true)
-        .addChoice("transactions", "transactions")
-        .addChoice("log", "log")
-        .addChoice("alerts", "alerts")
+        .addChoices(
+          { name: "transactions", value: "transactions" },
+          { name: "log", value: "log" },
+          { name: "alerts", value: "alerts" }
+        )
     ),
   async execute(interaction) {
     if (interaction.guild === null) {
