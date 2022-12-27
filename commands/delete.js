@@ -2,7 +2,7 @@ const Discord = require("discord.js");
 const { MessageActionRow, MessageButton } = require("discord.js");
 const { SlashCommandBuilder } = require("@discordjs/builders");
 const { openDb } = require("./../handlers/databaseHandler.js");
-const { updateLog } = require("./../handlers/logHandler.js");
+const { updateLog, updateDMLog } = require("./../handlers/logHandler.js");
 const {
   checkValidUser,
   checkTransactionsChannel,
@@ -132,13 +132,14 @@ module.exports = {
                   `DELETE FROM transactionhands WHERE serverid = ? AND transactionid = ?;`,
                   [interaction.guildId, transactionid]
                 );
+                // TODO update dm log if affecting a recipient with shared dms on
               } else if (result === 1 && isDM) {
                 transactionid = transactions[num - 1].transactionid;
                 db.run(
                   `DELETE FROM transactions WHERE serverid = ? AND transactionid = ?;`,
                   [userid, transactionid]
                 ).then(() => {
-                  // updateLog(interaction.guild); TODO
+                  updateDMLog(interaction.user, interaction.channel);
                 });
               }
             });
