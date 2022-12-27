@@ -12,6 +12,8 @@ module.exports = {
   updateDMLog,
   getButtonMonths,
   getDMLogButtons,
+  monthStartAndEnd,
+  yearStartAndEnd,
 };
 
 async function updateLog(server, newchannel = "") {
@@ -361,6 +363,12 @@ function monthStartAndEnd(month, year) {
     month += 1;
   }
   const end = `${year}-${month.toString().padStart(2, "0")}-01`;
+  return [start, end];
+}
+
+function yearStartAndEnd(year) {
+  const start = `${year}-01-01`;
+  const end = `${year + 1}-01-01`;
   return [start, end];
 }
 

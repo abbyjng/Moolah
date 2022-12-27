@@ -9,7 +9,7 @@ const commandFiles = fs
   .filter((file) => file.endsWith(".js"));
 
 // Place your client and guild ids here
-const clientId = "839639502767259669";
+const clientId = "872670044595826698";
 const guildId = "839665867461361720";
 
 for (const file of commandFiles) {
