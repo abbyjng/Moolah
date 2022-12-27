@@ -9,6 +9,7 @@ const {
   getDMLogButtons,
   getDMLogEmbed,
 } = require("./handlers/logHandler.js");
+const { startReminders } = require("./handlers/reminderHandler.js");
 const { MOOLAH_COLOR, ERROR_COLOR } = require("./constants.js");
 
 let db;
@@ -59,6 +60,8 @@ client.on("ready", async () => {
   });
 
   console.log(`Logged in as ${client.user.tag}!`);
+
+  startReminders(client);
 });
 
 client.on("interactionCreate", async (interaction) => {
@@ -144,7 +147,7 @@ client.on("guildCreate", async function (server) {
 });
 
 client.on("guildDelete", (server) => {
-  //   db.run(`DELETE FROM servers WHERE serverid = ?;`, [server.id]);
+  db.run(`DELETE FROM servers WHERE serverid = ?;`, [server.id]);
 });
 
 client.on("emojiDelete", async function (emoji) {
