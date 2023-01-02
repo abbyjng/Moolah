@@ -21,7 +21,7 @@ async function startReminders(c) {
   let users = await db.all(sql, []);
 
   users.forEach((user) => {
-    if (user.reminder != null && user.reminder != 8) {
+    if (user.reminder != 8) {
       userSchedules[user.reminder].push(user.userid);
     }
   });
@@ -31,7 +31,7 @@ async function startReminders(c) {
       userSchedules[i].forEach((userid) => {
         client.users.fetch(userid).then((user) => {
           user.send(
-            ":alarm_clock: Have you submitted all of your transactions for the day?"
+            "⏰ Have you submitted all of your transactions for the day?"
           );
         });
       });
@@ -42,7 +42,9 @@ async function startReminders(c) {
 }
 
 async function updateReminder(index) {
-  cronJobs[index].stop();
+  if (index != 8) {
+    cronJobs[index].stop();
+  }
 
   db = await openDb();
 
@@ -61,7 +63,7 @@ async function updateReminder(index) {
     userids.forEach((userid) => {
       client.users.fetch(userid).then((user) => {
         user.send(
-          ":alarm_clock: Have you submitted all of your transactions for the day?"
+          "⏰ Have you submitted all of your transactions for the day?"
         );
       });
     });

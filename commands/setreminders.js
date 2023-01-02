@@ -16,7 +16,7 @@ module.exports = {
       option
         .setName("time")
         .setDescription(
-          "The time of day you will receive your daily reminders. All times are in EST."
+          "The time of day you will receive your daily reminders. All times are in UTC / GMT."
         )
         .setRequired(true)
         .addChoices(
@@ -61,7 +61,7 @@ module.exports = {
               embeds: [
                 {
                   color: MOOLAH_COLOR,
-                  description: `Set reminders to send at **${indexToTime[time]} EST** every day.`,
+                  description: `Set reminders to send at **${indexToTime[time]} GMT** every day.`,
                 },
               ],
             });

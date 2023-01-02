@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS dms(
     userid TEXT PRIMARY KEY,
     logembed TEXT,
     shared INTEGER DEFAULT 1 NOT NULL,
-    reminder INTEGER
+    reminder INTEGER DEFAULT 8 NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS categories(
