@@ -139,8 +139,8 @@ client.on("guildCreate", async function (server) {
         },
         color: MOOLAH_COLOR,
         description:
-          "I use slash commands, so the prefix for all my commands is '/', e.g: '/help'.\nUse the command /help to see a list of all my commands.",
-        footer: { text: "Moolah created and developed by beexng#2380." },
+          "I use slash commands, so the prefix for all my commands is '/', e.g: '/help'.\nUse the command `/help list` to see a list of all my commands, and `/help start` if you're new to using me!",
+        footer: { text: "Moolah developed and maintained by beexng#2380." },
       },
     ],
   });
