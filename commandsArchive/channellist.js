@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require("@discordjs/builders");
 const { MOOLAH_COLOR, ERROR_COLOR } = require("../constants.js");
-const { openDb } = require("./../handlers/databaseHandler.js");
+const { openDb } = require("../handlers/databaseHandler.js");
 
 module.exports = {
   data: new SlashCommandBuilder()

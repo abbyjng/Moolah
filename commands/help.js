@@ -1,56 +1,126 @@
 const { SlashCommandBuilder } = require("@discordjs/builders");
 const { MOOLAH_COLOR } = require("../constants");
-
-let desc = `- All of these commands are slash commands; utilize the autofill and input regulation to avoid misinputs.
-- Inputs within {} are literals - type the option which fits your need exactly.
-- Inputs within [] are variables describing what you need to submit.
-- Inputs which are italicized are optional.
-- **The bracket characters are not included in any command.**`;
-
-let setupCmds = `/help
-/setuser [@user] [emoji]
-/removeuser [@user]
-/deleteuser [@user]
-/userlist
-/setchannel {transactions | log | alerts} [#channel]
-/clearchannel {transactions | log | alerts}
-/channellist
-
-For more information on these commands, use \`/setupHelp\`.`;
-
-let moneyCmds = `/bought [money value] *[description]*
-/paid {all: [user being paid] | value: [money value] *[@user being paid]*}
-/owe [money value] *[@user owed to]* *[description]*
-/log
-/history
-/delete {last | [number of transaction to delete]}
-/cleartransactions
-
-For more information on these commands, use \`/moneyHelp\`.`;
+const {
+  start,
+  descList,
+  setupList,
+  moneyList,
+  setupDetails,
+  moneyServersDetails,
+  moneyDmsDetails,
+} = require("../handlers/helpHandler");
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("help")
-    .setDescription("Displays a list of Moolah's commands."),
+    .setDescription("For if you need help using Moolah.")
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName("start")
+        .setDescription(
+          "Learn what Moolah does and how to get started using it!"
+        )
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName("list")
+        .setDescription(
+          "Returns a list of all of Moolah's commands without descriptions."
+        )
+    )
+    .addSubcommandGroup((subcommand) =>
+      subcommand
+        .setName("money")
+        .setDescription("Returns detailed lists of Moolah's money commands.")
+        .addSubcommand((subcommand) =>
+          subcommand
+            .setName("servers")
+            .setDescription(
+              "Returns a detailed list of server-specific transaction commands and what they do."
+            )
+        )
+        .addSubcommand((subcommand) =>
+          subcommand
+            .setName("dms")
+            .setDescription(
+              "Returns a detailed list of DM-specific transaction commands and what they do."
+            )
+        )
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName("setup")
+        .setDescription(
+          "Displays a list of all of Moolah's commands without descriptions."
+        )
+    ),
   async execute(interaction) {
-    await interaction.reply({
-      embeds: [
-        {
-          title: `My commands:`,
-          color: MOOLAH_COLOR,
-          description: desc,
-          fields: [
+    switch (interaction.options.getSubcommand()) {
+      case "start":
+        await interaction.reply({
+          embeds: [
             {
-              name: ":gear: Setup and logistics :wrench:",
-              value: setupCmds,
-            },
-            {
-              name: ":moneybag: Money :money_with_wings:",
-              value: moneyCmds,
+              title: `Welcome to Moolah!`,
+              color: MOOLAH_COLOR,
+              description: start,
             },
           ],
-        },
-      ],
-    });
+        });
+        break;
+      case "list":
+        await interaction.reply({
+          embeds: [
+            {
+              title: `My commands:`,
+              color: MOOLAH_COLOR,
+              description: descList,
+              fields: [
+                {
+                  name: ":gear: Setup and logistics :wrench:",
+                  value: setupList,
+                },
+                {
+                  name: ":moneybag: Money :money_with_wings:",
+                  value: moneyList,
+                },
+              ],
+            },
+          ],
+        });
+        break;
+      case "servers":
+        await interaction.reply({
+          embeds: [
+            {
+              title: `:moneybag: My server money commands: :money_with_wings:`,
+              color: MOOLAH_COLOR,
+              fields: moneyServersDetails,
+            },
+          ],
+        });
+        break;
+      case "dms":
+        await interaction.reply({
+          embeds: [
+            {
+              title: `:moneybag: My DM money commands: :money_with_wings:`,
+              color: MOOLAH_COLOR,
+              fields: moneyDmsDetails,
+            },
+          ],
+        });
+        break;
+      case "setup":
+        await interaction.reply({
+          embeds: [
+            {
+              title: `:gear: My setup commands: :wrench:`,
+              color: MOOLAH_COLOR,
+              fields: setupDetails,
+            },
+          ],
+        });
+        break;
+    }
   },
 };
