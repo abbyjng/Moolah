@@ -223,6 +223,7 @@ module.exports = {
                       });
                     });
                     updateLog(interaction.guild);
+                    console.log("updated log");
                   });
                 });
               }
@@ -371,7 +372,7 @@ async function handleTransaction(
                     ),
                   }
                 );
-              interaction.editReply({
+              i.update({
                 embeds: [newEmbed],
                 components: getButtons(emojis, t[(m.createdAt, authorid)]),
               });

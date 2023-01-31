@@ -147,7 +147,7 @@ client.on("guildCreate", async function (server) {
 });
 
 client.on("guildDelete", (server) => {
-  db.run(`DELETE FROM servers WHERE serverid = ?;`, [server.id]);
+  // db.run(`DELETE FROM servers WHERE serverid = ?;`, [server.id]);
 });
 
 client.on("emojiDelete", async function (emoji) {

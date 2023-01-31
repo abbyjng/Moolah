@@ -251,7 +251,7 @@ function handleLog(
         dispose: true,
       });
 
-      function handleButton(button) {
+      function handleButton(button, i) {
         if (button === "full_down") {
           // go to the bottom of the list
           newEmbed = new Discord.MessageEmbed()
@@ -265,8 +265,9 @@ function handleLog(
                 isDM
               )
             );
-          m.edit({ embeds: [newEmbed], components: [bottom_buttons] });
-          l[(m.createdAt, authorid)] = transactions.length - entriesPerScreen;
+          let new_pos = Math.max(transactions.length - entriesPerScreen, 0);
+          i.update({ embeds: [newEmbed], components: [bottom_buttons] });
+          l[(m.createdAt, authorid)] = new_pos;
         } else if (button === "down") {
           // go 10 down
           newEmbed = new Discord.MessageEmbed()
@@ -289,9 +290,9 @@ function handleLog(
           );
           l[(m.createdAt, authorid)] = new_pos;
           if (new_pos == transactions.length - entriesPerScreen) {
-            m.edit({ embeds: [newEmbed], components: [bottom_buttons] });
+            i.update({ embeds: [newEmbed], components: [bottom_buttons] });
           } else {
-            m.edit({ embeds: [newEmbed], components: [all_active_buttons] });
+            i.update({ embeds: [newEmbed], components: [all_active_buttons] });
           }
         } else if (button === "up") {
           // go entriesPerScreen up
@@ -312,9 +313,9 @@ function handleLog(
           );
           l[(m.createdAt, authorid)] = new_pos;
           if (new_pos == 0) {
-            m.edit({ embeds: [newEmbed], components: [top_buttons] });
+            i.update({ embeds: [newEmbed], components: [top_buttons] });
           } else {
-            m.edit({ embeds: [newEmbed], components: [all_active_buttons] });
+            i.update({ embeds: [newEmbed], components: [all_active_buttons] });
           }
         } else if (button === "full_up") {
           // go to the top of the list
@@ -324,13 +325,13 @@ function handleLog(
             .setDescription(
               getLogMessage(transactions, 0, entriesPerScreen, isDM)
             );
-          m.edit({ embeds: [newEmbed], components: [top_buttons] });
+          i.update({ embeds: [newEmbed], components: [top_buttons] });
           l[(m.createdAt, authorid)] = 0;
         }
       }
 
       collector.on("collect", (i) => {
-        handleButton(i.customId);
+        handleButton(i.customId, i);
       });
 
       collector.on("remove", (i) => {
