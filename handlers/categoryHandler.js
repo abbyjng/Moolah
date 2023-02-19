@@ -21,10 +21,10 @@ async function listCategory(interaction) {
   let db = await openDb();
   const userid = interaction.user.id;
 
-  sql = `SELECT name FROM categories WHERE userid = ?`;
-  categories = await db.all(sql, [userid]);
+  let sql = `SELECT name FROM categories WHERE userid = ?`;
+  const categories = await db.all(sql, [userid]);
 
-  categoriesStr = "";
+  let categoriesStr = "";
   categories.forEach((row) => {
     categoriesStr += ` • ${row.name}\n`;
   });
@@ -67,10 +67,10 @@ async function createCategory(interaction, name) {
       components: [],
     });
   } else {
-    sql = `SELECT name FROM categories WHERE userid = ? AND name = ?`;
-    existingCategory = await db.get(sql, [userid, name]);
+    let sql = `SELECT name FROM categories WHERE userid = ? AND name = ?`;
+    const existingCategory = await db.get(sql, [userid, name]);
     if (!existingCategory) {
-      sql = `INSERT INTO categories (userid, name) 
+      let sql = `INSERT INTO categories (userid, name)
                         VALUES (?, ?);`;
       db.run(sql, [userid, name]);
       updateDMLog(interaction.user, interaction.channel);
@@ -110,8 +110,8 @@ async function deleteCategory(interaction, name) {
       ],
     });
   } else {
-    sql = `SELECT name FROM categories WHERE userid = ? AND name = ?`;
-    existingCategory = await db.get(sql, [userid, name]);
+    let sql = `SELECT name FROM categories WHERE userid = ? AND name = ?`;
+    const existingCategory = await db.get(sql, [userid, name]);
     if (existingCategory) {
       const buttons = new MessageActionRow().addComponents(
         new MessageButton()
@@ -240,8 +240,8 @@ async function editCategory(interaction, oldName, newName) {
       components: [],
     });
   } else {
-    sql = `SELECT name FROM categories WHERE userid = ? AND name = ?`;
-    newNameExists = await db.get(sql, [userid, newName]);
+    let sql = `SELECT name FROM categories WHERE userid = ? AND name = ?`;
+    const newNameExists = await db.get(sql, [userid, newName]);
     if (newNameExists) {
       interaction.editReply({
         embeds: [
@@ -252,10 +252,10 @@ async function editCategory(interaction, oldName, newName) {
         ],
       });
     } else {
-      sql = `SELECT name FROM categories WHERE userid = ? AND name = ?`;
-      existingCategory = await db.get(sql, [userid, oldName]);
+      let sql = `SELECT name FROM categories WHERE userid = ? AND name = ?`;
+      const existingCategory = await db.get(sql, [userid, oldName]);
       if (existingCategory) {
-        sql = `UPDATE categories SET name = ? WHERE userid = ? AND name = ?;`;
+        let sql = `UPDATE categories SET name = ? WHERE userid = ? AND name = ?;`;
         db.run(sql, [newName, userid, oldName]);
 
         updateDMLog(interaction.user, interaction.channel);

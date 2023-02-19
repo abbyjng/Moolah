@@ -15,7 +15,7 @@ async function checkValidUser(interaction) {
   return new Promise((resolve, reject) => {
     if (guild == null) {
       // dms
-      sql = `SELECT userid FROM dms WHERE userid = ?`;
+      let sql = `SELECT userid FROM dms WHERE userid = ?`;
       db.get(sql, [userid]).then((val) => {
         if (val) {
           resolve(true);
@@ -32,12 +32,12 @@ async function checkValidUser(interaction) {
       });
     } else {
       // server
-      sql = `SELECT userid FROM users WHERE userid = ? AND serverid = ? AND status = 1`;
+      let sql = `SELECT userid FROM users WHERE userid = ? AND serverid = ? AND status = 1`;
       db.get(sql, [userid, serverid]).then((val) => {
         if (val) {
           resolve(true);
         } else {
-          sql = `SELECT userid FROM users WHERE serverid = ? AND status = 1`;
+          let sql = `SELECT userid FROM users WHERE serverid = ? AND status = 1`;
           db.get(sql, [serverid]).then((users) => {
             if (!users) {
               interaction.editReply({
@@ -69,7 +69,7 @@ async function checkValidUser(interaction) {
 async function checkTransactionsChannel(channelid, serverid) {
   let db = await openDb();
   return new Promise((resolve, reject) => {
-    sql = `SELECT transactionsid FROM servers WHERE serverid = ?`;
+    let sql = `SELECT transactionsid FROM servers WHERE serverid = ?`;
     db.get(sql, [serverid]).then((data) => {
       if (data.transactionsid == "" || data.transactionsid == channelid) {
         resolve(null);

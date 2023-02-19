@@ -19,16 +19,16 @@ module.exports = {
 async function updateLog(server, newchannel = "") {
   db = await openDb();
   if (newchannel !== "") {
-    c = await server.channels.cache.get(newchannel);
+    const c = await server.channels.cache.get(newchannel);
     c.send({ embeds: await getLogEmbeds(server) }).then((m) => {
-      sql = `UPDATE servers SET logembed = ? WHERE serverid = ?;`;
+      let sql = `UPDATE servers SET logembed = ? WHERE serverid = ?;`;
       db.run(sql, [m.id, server.id]);
     });
   } else {
-    sql = `SELECT logid, logembed FROM servers WHERE serverid = ?`;
-    data = await db.get(sql, [server.id]);
+    let sql = `SELECT logid, logembed FROM servers WHERE serverid = ?`;
+    const data = await db.get(sql, [server.id]);
     if (data.logid != "") {
-      c = server.channels.cache.get(data.logid);
+      const c = server.channels.cache.get(data.logid);
       c.messages
         .fetch(data.logembed)
         .then((oldEmbed) => {
@@ -37,7 +37,7 @@ async function updateLog(server, newchannel = "") {
               // in case something breaks in sending the original embed somehow
               let newEmbeds = await getLogEmbeds(server);
               c.send({ embeds: newEmbeds }).then((m) => {
-                sql = `UPDATE servers SET logembed = ? WHERE serverid = ?;`;
+                let sql = `UPDATE servers SET logembed = ? WHERE serverid = ?;`;
                 db.run(sql, [m.id, server.id]);
               });
             } else {
@@ -53,19 +53,19 @@ async function updateLog(server, newchannel = "") {
 
 async function getLogEmbeds(server) {
   db = await openDb();
-  embeds = [];
+  let embeds = [];
   return new Promise((resolve, reject) => {
-    sql = `SELECT userid, emoji FROM users WHERE serverid = ? AND status = 1`;
+    let sql = `SELECT userid, emoji FROM users WHERE serverid = ? AND status = 1`;
     db.all(sql, [server.id]).then((users) => {
       if (users.length <= 1) {
         resolve([{ color: MOOLAH_COLOR, title: `No transactions available.` }]);
       }
-      var description = ``;
+      let description = ``;
       users.forEach((user) => {
         description += `<@!${user.userid}>: ${user.emoji}\n`;
       });
 
-      var titleEmbed = {};
+      let titleEmbed = {};
       titleEmbed.title = "Money log";
       titleEmbed.description = description;
       titleEmbed.color = MOOLAH_COLOR;
@@ -83,14 +83,13 @@ async function getLogEmbeds(server) {
           value += `<@!${user}> owes:\n`;
 
           for (key in log[user]) {
-            value += `$${log[user][key].value.toFixed(2)} to ${
-              log[user][key].emoji
-            } | `;
+            value += `$${log[user][key].value.toFixed(2)} to ${log[user][key].emoji
+              } | `;
           }
           value = value.slice(0, -2) + `\n\n`;
 
           if (counter == usersPerEmbed - 1) {
-            var subEmbed = {};
+            let subEmbed = {};
             subEmbed.description = value;
             subEmbed.color = MOOLAH_COLOR;
             embeds.push(subEmbed);
@@ -101,7 +100,7 @@ async function getLogEmbeds(server) {
           }
         }
         if (counter != 0) {
-          subEmbed = {};
+          let subEmbed = {};
           subEmbed.description = value;
           subEmbed.color = MOOLAH_COLOR;
           embeds.push(subEmbed);
@@ -116,7 +115,7 @@ async function getLogEmbeds(server) {
 async function getLogDict(users, serverid) {
   db = await openDb();
   return new Promise((resolve, reject) => {
-    log = {};
+    let log = {};
     users.forEach((user) => {
       log[user.userid] = {};
       users.forEach((otherUser) => {
@@ -129,13 +128,13 @@ async function getLogDict(users, serverid) {
       });
     });
     // get all transactions and handle them
-    sql = `SELECT
+    let sql = `SELECT
               owner,
               recipient,
               value
           FROM
-              transactions as t 
-              INNER JOIN 
+              transactions as t
+              INNER JOIN
               transactionhands as th
               ON t.transactionid = th.transactionid
           WHERE
@@ -172,15 +171,16 @@ async function getLogDict(users, serverid) {
 
 async function getDMLogEmbed(userid, month, year) {
   db = await openDb();
-  embeds = [];
+  let embeds = [];
   return new Promise((resolve, reject) => {
-    sql = `SELECT name FROM categories WHERE userid = ?`;
+    let sql = `SELECT name FROM categories WHERE userid = ?`;
     db.all(sql, [userid]).then((categories) => {
       const date = new Date(year, month - 1, 1);
       const title = date.toLocaleString("en-US", {
         month: "long",
         year: "numeric",
       });
+
       getDMLogDict(userid, categories, month, year).then((log) => {
         if (!log) {
           resolve({
@@ -212,13 +212,13 @@ async function getDMLogEmbed(userid, month, year) {
 async function getDMLogDict(userid, categories, month, year) {
   db = await openDb();
   return new Promise((resolve, reject) => {
-    log = {};
+    let log = {};
 
     categories.forEach((category) => {
       log[category.name] = 0;
     });
 
-    sql = `SELECT value, category, created FROM transactions WHERE serverid = ? AND created >= ? AND created < ?`;
+    let sql = `SELECT value, category, created FROM transactions WHERE serverid = ? AND created >= ? AND created < ?`;
     db.all(sql, [userid, ...monthStartAndEnd(month, year)]).then(
       (transactions) => {
         if (transactions.length === 0) {
@@ -237,16 +237,16 @@ async function getDMLogDict(userid, categories, month, year) {
 
 async function updateDMLog(user, channel) {
   db = await openDb();
-  sql = `SELECT logembed FROM dms WHERE userid = ?`;
-  data = await db.get(sql, [user.id]);
+  let sql = `SELECT logembed FROM dms WHERE userid = ?`;
+  let data = await db.get(sql, [user.id]);
 
   channel.messages
     .fetch(data.logembed)
     .then((oldEmbed) => {
       (async function () {
         const now = new Date();
-        month = now.getMonth() + 1;
-        year = now.getFullYear();
+        const month = now.getMonth() + 1;
+        const year = now.getFullYear();
         const newEmbed = await getDMLogEmbed(user.id, month, year);
         const b = await getButtonMonths(user.id, month, year);
         if (!oldEmbed) {
@@ -264,7 +264,7 @@ async function updateDMLog(user, channel) {
               ],
             })
             .then((m) => {
-              sql = `UPDATE dms SET logembed = ? WHERE userid = ?;`;
+              let sql = `UPDATE dms SET logembed = ? WHERE userid = ?;`;
               db.run(sql, [m.id, user.id]);
             });
         } else {
@@ -288,7 +288,7 @@ async function updateDMLog(user, channel) {
 async function getButtonMonths(userid, month, year) {
   db = await openDb();
   return new Promise((resolve, reject) => {
-    sql = `SELECT created FROM transactions WHERE serverid = ? ORDER BY created ASC LIMIT 1`;
+    let sql = `SELECT created FROM transactions WHERE serverid = ? ORDER BY created ASC LIMIT 1`;
     db.get(sql, [userid]).then((oldestTransaction) => {
       // no transactions exist
       if (oldestTransaction === undefined) {

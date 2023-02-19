@@ -91,15 +91,13 @@ module.exports = {
     } else {
       let validUser = await checkValidUser(interaction);
       if (validUser) {
-        let filename = `${interaction.user.username}_${
-          month ? numberToMonth[month] : ""
-        }${year}.csv`;
+        let filename = `${interaction.user.username}_${month ? numberToMonth[month] : ""
+          }${year}.csv`;
 
         // start the file with the month and year as the header and the column labels
         fs.writeFile(
           filename,
-          `${
-            month ? numberToMonth[month] + "," + year : year
+          `${month ? numberToMonth[month] + "," + year : year
           }\n\nTime submitted,Category,Value,Description\n`,
           function (err) {
             if (err) throw err;
@@ -107,7 +105,7 @@ module.exports = {
         );
 
         // get all transactions from that month or year and append them to the file
-        sql = `SELECT name FROM categories WHERE userid = ?`;
+        let sql = `SELECT name FROM categories WHERE userid = ?`;
         let categories = await db.all(sql, [userid]);
 
         let log = {};
@@ -131,8 +129,7 @@ module.exports = {
 
               fs.appendFile(
                 filename,
-                `${t.created},${t.category},${t.value.toFixed(2)},${
-                  t.description
+                `${t.created},${t.category},${t.value.toFixed(2)},${t.description
                 }\n`,
                 function (err) {
                   if (err) throw err;
@@ -159,11 +156,10 @@ module.exports = {
                                 embeds: [
                                   {
                                     color: MOOLAH_COLOR,
-                                    description: `CSV file generated for ${
-                                      month
+                                    description: `CSV file generated for ${month
                                         ? numberToMonth[month] + ", " + year
                                         : year
-                                    }.`,
+                                      }.`,
                                   },
                                 ],
                                 files: [`./${filename}`],
@@ -187,9 +183,8 @@ module.exports = {
                 embeds: [
                   {
                     color: ERROR_COLOR,
-                    description: `No transactions found for ${
-                      month ? numberToMonth[month] + ", " + year : year
-                    }.`,
+                    description: `No transactions found for ${month ? numberToMonth[month] + ", " + year : year
+                      }.`,
                   },
                 ],
               })

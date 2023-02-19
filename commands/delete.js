@@ -36,7 +36,6 @@ module.exports = {
     const userid = interaction.user.id;
     const isDM = interaction.guild === null;
 
-    sql = `SELECT userid FROM users WHERE userid = ? AND serverid = ? AND status = 1`;
     let validUser = await checkValidUser(interaction);
     if (validUser) {
       let validChannel = null;
@@ -49,18 +48,18 @@ module.exports = {
 
       if (!validChannel) {
         // get all transactions in this server
-        sql = ` SELECT  
-                          transactionid, 
-                          value, 
-                          description, 
+        let sql = ` SELECT
+                          transactionid,
+                          value,
+                          description,
                           category,
-                          CAST(strftime('%s', created) AS INT) AS created 
-                      FROM 
-                          transactions 
-                      WHERE 
+                          CAST(strftime('%s', created) AS INT) AS created
+                      FROM
+                          transactions
+                      WHERE
                           serverid = ?`;
 
-        transactions = await db.all(sql, [isDM ? userid : interaction.guildId]);
+        const transactions = await db.all(sql, [isDM ? userid : interaction.guildId]);
 
         let num;
 
@@ -95,16 +94,16 @@ module.exports = {
             else return -1;
           });
 
-          recipients = null;
+          let recipients = null;
           if (!isDM) {
-            sql = ` SELECT 
-                                owner,  
+            let sql = ` SELECT
+                                owner,
                                 emoji
                             FROM
-                                transactionhands INNER JOIN users 
-                                ON transactionhands.recipient = users.userid AND 
+                                transactionhands INNER JOIN users
+                                ON transactionhands.recipient = users.userid AND
                                     transactionhands.serverid = users.serverid
-                            WHERE 
+                            WHERE
                                 transactionid = ?`;
 
             recipients = await db.all(sql, [
@@ -121,7 +120,7 @@ module.exports = {
               isDM
             ).then((result) => {
               if (result === 1 && !isDM) {
-                transactionid = transactions[num - 1].transactionid;
+                let transactionid = transactions[num - 1].transactionid;
                 db.run(
                   `DELETE FROM transactions WHERE serverid = ? AND transactionid = ?;`,
                   [interaction.guildId, transactionid]
@@ -134,7 +133,7 @@ module.exports = {
                 );
                 // TODO update dm log if affecting a recipient with shared dms on
               } else if (result === 1 && isDM) {
-                transactionid = transactions[num - 1].transactionid;
+                let transactionid = transactions[num - 1].transactionid;
                 db.run(
                   `DELETE FROM transactions WHERE serverid = ? AND transactionid = ?;`,
                   [userid, transactionid]
@@ -182,9 +181,8 @@ async function handleDelete(
     if (!isDM) {
       if (transaction.description == "defaultPaidDescription") {
         descString += `<@!${recipients[0].owner}> paid ${recipients[0].emoji} `;
-        descString += `[$${transaction.value.toFixed(2)}] | <t:${
-          transaction.created
-        }:d>}\n`;
+        descString += `[$${transaction.value.toFixed(2)}] | <t:${transaction.created
+          }:d>}\n`;
       } else if (transaction.value < 0) {
         // owe
         descString += `<@!${recipients[0].owner}> owes ${recipients[0].emoji} `;
@@ -218,7 +216,7 @@ async function handleDelete(
       descString += ` | <t:${transaction.created}:d>\n`;
     }
 
-    embed = new Discord.MessageEmbed()
+    let embed = new Discord.MessageEmbed()
       .setTitle(`Delete this transaction?`)
       .setColor(MOOLAH_COLOR)
       .setDescription(descString);
@@ -244,9 +242,8 @@ async function handleDelete(
             interaction.editReply({
               embeds: [
                 {
-                  description: `Action timed out - transaction #${
-                    number + 1
-                  } has not been deleted.`,
+                  description: `Action timed out - transaction #${number + 1
+                    } has not been deleted.`,
                   color: ERROR_COLOR,
                 },
               ],
@@ -259,9 +256,8 @@ async function handleDelete(
             interaction.editReply({
               embeds: [
                 {
-                  description: `Action cancelled - transaction #${
-                    number + 1
-                  } has not been deleted.`,
+                  description: `Action cancelled - transaction #${number + 1
+                    } has not been deleted.`,
                   color: ERROR_COLOR,
                 },
               ],
@@ -274,9 +270,8 @@ async function handleDelete(
             interaction.editReply({
               embeds: [
                 {
-                  description: `Transaction #${
-                    number + 1
-                  } deleted successfully.`,
+                  description: `Transaction #${number + 1
+                    } deleted successfully.`,
                   color: SUCCESS_COLOR,
                 },
               ],

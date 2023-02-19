@@ -112,10 +112,10 @@ module.exports = {
         } else if (interaction.guild === null) {
           category = category || "miscellaneous";
 
-          sql = `SELECT name FROM categories WHERE userid = ? AND name = ?`;
+          let sql = `SELECT name FROM categories WHERE userid = ? AND name = ?`;
           exists = (await db.get(sql, [interaction.user.id, category])) != null;
           if (exists) {
-            sql = `INSERT INTO transactions (serverid, value, description, type, category)
+            let sql = `INSERT INTO transactions (serverid, value, description, type, category)
                                         VALUES (?, ?, ?, "DM", ?);`;
             db.run(sql, [interaction.user.id, cost, description, category]);
 
@@ -144,7 +144,7 @@ module.exports = {
             components: [],
           });
         } else {
-          sql = `SELECT userid, emoji FROM users WHERE serverid = ? AND status = 1`;
+          let sql = `SELECT userid, emoji FROM users WHERE serverid = ? AND status = 1`;
           users = await db.all(sql, [interaction.guildId]);
           (async function () {
             handleTransaction(
@@ -156,7 +156,7 @@ module.exports = {
               description
             ).then((recipients) => {
               if (recipients[0] !== 0 && recipients[0] !== -1) {
-                sql = `INSERT INTO transactions (serverid, value, description, type, category)
+                let sql = `INSERT INTO transactions (serverid, value, description, type, category)
                                         VALUES (?, ?, ?, "SERVER", "");`;
                 db.run(sql, [
                   interaction.guildId,
@@ -165,7 +165,7 @@ module.exports = {
                 ]).then(() => {
                   db.run("SELECT last_insert_rowid()").then((transactionid) => {
                     recipients.forEach((recipient) => {
-                      sql = `INSERT INTO transactionhands (serverid, transactionid, owner, recipient)
+                      let sql = `INSERT INTO transactionhands (serverid, transactionid, owner, recipient)
                                                     VALUES (?, ?, ?, ?);`;
                       db.run(sql, [
                         interaction.guildId,
@@ -173,10 +173,10 @@ module.exports = {
                         interaction.user.id,
                         recipient.userid,
                       ]).then(() => {
-                        sql = `SELECT shared FROM dms WHERE userid = ?;`;
+                        let sql = `SELECT shared FROM dms WHERE userid = ?;`;
                         db.get(sql, [recipient.userid]).then((dmUser) => {
                           if (dmUser && dmUser.shared == 1) {
-                            sql = `INSERT INTO transactions (serverid, value, description, type, category)
+                            let sql = `INSERT INTO transactions (serverid, value, description, type, category)
                                                      VALUES (?, ?, ?, "DM", "miscellaneous");`;
                             db.run(sql, [
                               recipient.userid,
@@ -198,15 +198,13 @@ module.exports = {
                                         .send({
                                           embeds: [
                                             {
-                                              description: `New transaction: ${
-                                                description
-                                                  ? `"${description}"`
-                                                  : "(no description)"
-                                              } from server "${
-                                                interaction.guild.name
-                                              }", costing $${(
-                                                cost / recipients.length
-                                              ).toFixed(2)}`,
+                                              description: `New transaction: ${description
+                                                ? `"${description}"`
+                                                : "(no description)"
+                                                } from server "${interaction.guild.name
+                                                }", costing $${(
+                                                  cost / recipients.length
+                                                ).toFixed(2)}`,
                                               color: SUCCESS_COLOR,
                                             },
                                           ],
@@ -223,7 +221,6 @@ module.exports = {
                       });
                     });
                     updateLog(interaction.guild);
-                    console.log("updated log");
                   });
                 });
               }
@@ -254,7 +251,7 @@ async function handleTransaction(
   description
 ) {
   return new Promise((resolve, reject) => {
-    emojis = users.map((user) => {
+    const emojis = users.map((user) => {
       if (user.emoji.charAt(0) === "<") {
         return user.emoji.slice(user.emoji.indexOf(":", 2) + 1, -1);
       } else {
@@ -262,7 +259,7 @@ async function handleTransaction(
       }
     });
 
-    info = {
+    let info = {
       recipients: [],
       value: value,
       description: description,
@@ -270,7 +267,7 @@ async function handleTransaction(
       status: StatusEnum.WORKING,
     };
 
-    embed = new Discord.MessageEmbed()
+    let embed = new Discord.MessageEmbed()
       .setTitle(`New transaction...`)
       .setColor(MOOLAH_COLOR)
       .addFields(
@@ -356,7 +353,7 @@ async function handleTransaction(
                   }
                 }
               });
-              newEmbed = new Discord.MessageEmbed()
+              let newEmbed = new Discord.MessageEmbed()
                 .setTitle(`New transaction...`)
                 .setColor(MOOLAH_COLOR)
                 .addFields(
@@ -393,8 +390,8 @@ async function handleTransaction(
 }
 
 function getButtons(emojis, info) {
-  rows = [];
-  buttons = new MessageActionRow();
+  let rows = [];
+  let buttons = new MessageActionRow();
   if (info.recipients.length == 0) {
     buttons.addComponents(
       new MessageButton()
@@ -415,7 +412,7 @@ function getButtons(emojis, info) {
       rows.push(buttons);
       buttons = new MessageActionRow();
     }
-    style = "SECONDARY";
+    let style = "SECONDARY";
     info.recipients.forEach((user) => {
       if (
         emoji === user.emoji ||
@@ -446,7 +443,7 @@ function getButtons(emojis, info) {
 }
 
 function getFormattedUsers(users, userid = null) {
-  formUsers = "";
+  let formUsers = "";
   users.forEach((row) => {
     if (row.userid !== userid) {
       formUsers += `${row.emoji} → `;
@@ -457,7 +454,7 @@ function getFormattedUsers(users, userid = null) {
 }
 
 function getInfoString(info, totalUsers) {
-  retStr = "";
+  let retStr = "";
 
   if (info.recipients.length == 0) {
     retStr += `All (default)\n`;
@@ -492,7 +489,7 @@ function confirmServerTransaction(
   value,
   description
 ) {
-  msg = `<@!${ownerid}> purchased **$${parseFloat(value).toFixed(2)}** for `;
+  let msg = `<@!${ownerid}> purchased **$${parseFloat(value).toFixed(2)}** for `;
   recipients.forEach((user) => {
     msg += user.emoji;
     msg += `<@!${user.userid}>, `;
@@ -519,7 +516,7 @@ function confirmServerTransaction(
 }
 
 function confirmDMTransaction(interaction, value, description, category) {
-  msg = `Cost: **$${parseFloat(value).toFixed(2)}**\n`;
+  let msg = `Cost: **$${parseFloat(value).toFixed(2)}**\n`;
   if (!description) {
     msg += `Description: none\n`;
   } else {

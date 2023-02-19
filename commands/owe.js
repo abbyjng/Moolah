@@ -107,8 +107,8 @@ module.exports = {
           });
         } else if (!user) {
           // do embed
-          sql = `SELECT userid, emoji FROM users WHERE serverid = ? AND status = 1`;
-          users = await db.all(sql, [interaction.guildId]);
+          let sql = `SELECT userid, emoji FROM users WHERE serverid = ? AND status = 1`;
+          const users = await db.all(sql, [interaction.guildId]);
           (async function () {
             handleOwe(
               interaction,
@@ -119,13 +119,13 @@ module.exports = {
               description
             ).then((recipient) => {
               if (recipient !== 0 && recipient !== -1) {
-                sql = `INSERT INTO transactions (serverid, value, description, type, category)
+                let sql = `INSERT INTO transactions (serverid, value, description, type, category)
                                         VALUES (?, ?, ?, "SERVER", "");`;
                 db.run(sql, [interaction.guildId, -cost, description]).then(
                   () => {
                     db.run("SELECT last_insert_rowid()").then(
                       (transactionid) => {
-                        sql = `INSERT INTO transactionhands (serverid, transactionid, owner, recipient)
+                        let sql = `INSERT INTO transactionhands (serverid, transactionid, owner, recipient)
                                                 VALUES (?, ?, ?, ?);`;
                         db.run(sql, [
                           interaction.guildId,
@@ -144,8 +144,8 @@ module.exports = {
           })();
         } else {
           // try tagged user
-          sql = `SELECT emoji FROM users WHERE userid = ? AND serverid = ? AND status = 1`;
-          result = await db.get(sql, [user.id, interaction.guildId]);
+          let sql = `SELECT emoji FROM users WHERE userid = ? AND serverid = ? AND status = 1`;
+          const result = await db.get(sql, [user.id, interaction.guildId]);
           if (!result) {
             interaction.editReply({
               color: ERROR_COLOR,
@@ -169,11 +169,11 @@ module.exports = {
           } else {
             let userid = user.id;
             // insert into transactions
-            sql = `INSERT INTO transactions (serverid, value, description, type, category)
+            let sql = `INSERT INTO transactions (serverid, value, description, type, category)
                                         VALUES (?, ?, ?, "SERVER", "");`;
             db.run(sql, [interaction.guildId, -cost, description]).then(() => {
               db.run("SELECT last_insert_rowid()").then((transactionid) => {
-                sql = `INSERT INTO transactionhands (serverid, transactionid, owner, recipient)
+                let sql = `INSERT INTO transactionhands (serverid, transactionid, owner, recipient)
                                         VALUES (?, ?, ?, ?);`;
                 db.run(sql, [
                   interaction.guildId,
@@ -219,7 +219,7 @@ async function handleOwe(
   description
 ) {
   return new Promise((resolve, reject) => {
-    emojis = users.map((user) => {
+    let emojis = users.map((user) => {
       if (user.userid == authorid) {
         return;
       }
@@ -230,8 +230,8 @@ async function handleOwe(
       }
     });
 
-    rows = [];
-    buttons = new MessageActionRow();
+    let rows = [];
+    let buttons = new MessageActionRow();
 
     emojis.forEach((emoji) => {
       if (emoji) {
@@ -262,7 +262,7 @@ async function handleOwe(
 
     rows.push(buttons);
 
-    info = {
+    let info = {
       recipient: "",
       value: value,
       description: description,
@@ -270,7 +270,7 @@ async function handleOwe(
       status: StatusEnum.WORKING,
     };
 
-    msg = `Select the recipient of this debt of $${parseFloat(value).toFixed(
+    let msg = `Select the recipient of this debt of $${parseFloat(value).toFixed(
       2
     )}`;
     if (info.description) {
@@ -278,7 +278,7 @@ async function handleOwe(
     } else {
       msg += `:`;
     }
-    embed = new Discord.MessageEmbed()
+    let embed = new Discord.MessageEmbed()
       .setTitle(`New debt...`)
       .addFields({
         name: msg,
@@ -342,7 +342,7 @@ async function handleOwe(
 }
 
 function getFormattedUsers(users, userid = null) {
-  formUsers = "";
+  let formUsers = "";
   users.forEach((row) => {
     if (row.userid !== userid) {
       formUsers += `${row.emoji} → `;

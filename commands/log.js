@@ -5,8 +5,6 @@ const {
   checkTransactionsChannel,
 } = require("./../handlers/permissionHandler.js");
 
-let l = {};
-
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("log")

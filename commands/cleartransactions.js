@@ -20,7 +20,6 @@ module.exports = {
 
     let db = await openDb();
 
-    sql = `SELECT userid FROM users WHERE userid = ? AND serverid = ? AND status = 1`;
     let validUser = await checkValidUser(interaction);
     if (validUser) {
       let validChannel = null;
@@ -81,11 +80,10 @@ async function handleClear(interaction, isDM) {
         .setStyle("DANGER")
     );
 
-    embed = new Discord.MessageEmbed()
+    let embed = new Discord.MessageEmbed()
       .setColor(MOOLAH_COLOR)
       .setDescription(
-        `**Warning:** By confirming this action, all transactions logged  ${
-          isDM ? "for this user" : "in this server"
+        `**Warning:** By confirming this action, all transactions logged  ${isDM ? "for this user" : "in this server"
         } will be permanently deleted. Do you wish to continue?`
       );
     interaction

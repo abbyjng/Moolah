@@ -17,8 +17,8 @@ async function startReminders(c) {
 
   let userSchedules = [[], [], [], [], [], [], [], []];
 
-  sql = `SELECT userid, reminder FROM dms`;
-  let users = await db.all(sql, []);
+  let sql = `SELECT userid, reminder FROM dms`;
+  const users = await db.all(sql, []);
 
   users.forEach((user) => {
     if (user.reminder != 8) {
@@ -44,30 +44,30 @@ async function startReminders(c) {
 async function updateReminder(index) {
   if (index != 8) {
     cronJobs[index].stop();
-  }
 
-  db = await openDb();
+    db = await openDb();
 
-  let userids = [];
+    let userids = [];
 
-  sql = `SELECT userid, reminder FROM dms`;
-  let users = await db.all(sql, []);
+    let sql = `SELECT userid, reminder FROM dms`;
+    const users = await db.all(sql, []);
 
-  users.forEach((user) => {
-    if (user.reminder == index) {
-      userids.push(user.userid);
-    }
-  });
+    users.forEach((user) => {
+      if (user.reminder == index) {
+        userids.push(user.userid);
+      }
+    });
 
-  let newJob = new cron.CronJob(`00 00 ${index * 3} * * *`, () => {
-    userids.forEach((userid) => {
-      client.users.fetch(userid).then((user) => {
-        user.send(
-          "⏰ Have you submitted all of your transactions for the day?"
-        );
+    let newJob = new cron.CronJob(`00 00 ${index * 3} * * *`, () => {
+      userids.forEach((userid) => {
+        client.users.fetch(userid).then((user) => {
+          user.send(
+            "⏰ Have you submitted all of your transactions for the day?"
+          );
+        });
       });
     });
-  });
-  cronJobs[index] = newJob;
-  newJob.start();
+    cronJobs[index] = newJob;
+    newJob.start();
+  }
 }

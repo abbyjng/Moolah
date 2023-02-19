@@ -24,8 +24,8 @@ module.exports = {
         ],
       });
     } else {
-      sql = `SELECT userid FROM dms WHERE userid = ?`;
-      existingDM = await db.get(sql, [userid]);
+      let sql = `SELECT userid FROM dms WHERE userid = ?`;
+      const existingDM = await db.get(sql, [userid]);
       if (!existingDM) {
         const now = new Date();
         interaction.user
@@ -42,7 +42,7 @@ module.exports = {
           .then((m) => {
             m.pin();
             // add dm to the database
-            sql = `INSERT INTO dms (userid, logembed) 
+            let sql = `INSERT INTO dms (userid, logembed)
                         VALUES (?, ?);`;
             db.run(sql, [userid, m.id]);
 

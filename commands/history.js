@@ -20,18 +20,18 @@ module.exports = {
     const userid = interaction.user.id;
 
     if (interaction.guild === null) {
-      sql = ` SELECT 
-                        value, 
-                        description, 
+      let sql = ` SELECT
+                        value,
+                        description,
                         category,
-                        CAST(strftime('%s', created) AS INT) AS created 
-                    FROM 
-                        transactions 
-                    WHERE 
+                        CAST(strftime('%s', created) AS INT) AS created
+                    FROM
+                        transactions
+                    WHERE
                         serverid = ?`;
 
-      transactions = await db.all(sql, [userid]);
-      entriesPerScreen = Math.min(Math.floor(10), 10);
+      const transactions = await db.all(sql, [userid]);
+      let entriesPerScreen = Math.min(Math.floor(10), 10);
       transactions.sort(function (a, b) {
         if (a.created > b.created) return 1;
         else return -1;
@@ -47,17 +47,17 @@ module.exports = {
     );
     if (!validChannel) {
       // get all transactionids in this server
-      sql = ` SELECT 
-                        transactionid, 
-                        value, 
-                        description, 
-                        CAST(strftime('%s', created) AS INT) AS created 
-                    FROM 
-                        transactions 
-                    WHERE 
+      let sql = ` SELECT
+                        transactionid,
+                        value,
+                        description,
+                        CAST(strftime('%s', created) AS INT) AS created
+                    FROM
+                        transactions
+                    WHERE
                         serverid = ?`;
 
-      transactionids = await db.all(sql, [interaction.guildId]);
+      const transactionids = await db.all(sql, [interaction.guildId]);
 
       sql = `SELECT userid FROM users WHERE serverid = ?`;
       let numUsers = (await db.all(sql, [interaction.guildId])).length;
@@ -69,21 +69,21 @@ module.exports = {
       );
 
       // loop thru them all and get info for each one
-      tlist = [];
-      invalidTransactions = 0; // deal with this later lol
+      let tlist = [];
+      let invalidTransactions = 0; // deal with this later lol
       if (transactionids.length === 0) {
         // no transactions
         noTransactions(interaction);
       }
       transactionids.forEach((id) => {
-        sql = ` SELECT 
-                            owner,  
+        let sql = ` SELECT
+                            owner,
                             emoji
                         FROM
-                            transactionhands INNER JOIN users 
-                            ON transactionhands.recipient = users.userid AND 
+                            transactionhands INNER JOIN users
+                            ON transactionhands.recipient = users.userid AND
                                 transactionhands.serverid = users.serverid
-                        WHERE 
+                        WHERE
                             transactionid = ?`;
         db.all(sql, [id.transactionid]).then((tarray) => {
           if (tarray.length > 0) {
@@ -128,7 +128,7 @@ module.exports = {
 };
 
 function noTransactions(interaction) {
-  embed = new Discord.MessageEmbed()
+  const embed = new Discord.MessageEmbed()
     .setTitle(`Transaction log`)
     .setColor(MOOLAH_COLOR)
     .setDescription(`No transactions found.`);
@@ -220,7 +220,7 @@ function handleLog(
       .setDisabled(true)
   );
 
-  embed = new Discord.MessageEmbed()
+  const embed = new Discord.MessageEmbed()
     .setTitle(`Transaction log`)
     .setColor(MOOLAH_COLOR)
     .setDescription(
@@ -254,7 +254,7 @@ function handleLog(
       function handleButton(button, i) {
         if (button === "full_down") {
           // go to the bottom of the list
-          newEmbed = new Discord.MessageEmbed()
+          const newEmbed = new Discord.MessageEmbed()
             .setTitle(`Transaction log`)
             .setColor(MOOLAH_COLOR)
             .setDescription(
@@ -270,7 +270,7 @@ function handleLog(
           l[(m.createdAt, authorid)] = new_pos;
         } else if (button === "down") {
           // go 10 down
-          newEmbed = new Discord.MessageEmbed()
+          const newEmbed = new Discord.MessageEmbed()
             .setTitle(`Transaction log`)
             .setColor(MOOLAH_COLOR)
             .setDescription(
@@ -296,7 +296,7 @@ function handleLog(
           }
         } else if (button === "up") {
           // go entriesPerScreen up
-          newEmbed = new Discord.MessageEmbed()
+          const newEmbed = new Discord.MessageEmbed()
             .setTitle(`Transaction log`)
             .setColor(MOOLAH_COLOR)
             .setDescription(
@@ -319,7 +319,7 @@ function handleLog(
           }
         } else if (button === "full_up") {
           // go to the top of the list
-          newEmbed = new Discord.MessageEmbed()
+          const newEmbed = new Discord.MessageEmbed()
             .setTitle(`Transaction log`)
             .setColor(MOOLAH_COLOR)
             .setDescription(
@@ -339,7 +339,7 @@ function handleLog(
       });
 
       collector.on("end", (collected, reason) => {
-        newEmbed = new Discord.MessageEmbed()
+        const newEmbed = new Discord.MessageEmbed()
           .setTitle(`Transaction log -- Inactive`)
           .setColor(MOOLAH_COLOR)
           .setDescription(
@@ -356,7 +356,7 @@ function handleLog(
 }
 
 function getLogMessage(transactions, startIndex, entriesPerScreen, isDM) {
-  retStr = ``;
+  let retStr = ``;
   if (!isDM) {
     for (
       var i = startIndex;
@@ -365,17 +365,14 @@ function getLogMessage(transactions, startIndex, entriesPerScreen, isDM) {
     ) {
       if (transactions[i].description == "defaultPaidDescription") {
         // paid
-        retStr += `${i + 1}) <@!${transactions[i].owner}> paid ${
-          transactions[i].emojis[0]
-        } `;
-        retStr += `[$${transactions[i].value.toFixed(2)}] | <t:${
-          transactions[i].created
-        }:d>\n`;
+        retStr += `${i + 1}) <@!${transactions[i].owner}> paid ${transactions[i].emojis[0]
+          } `;
+        retStr += `[$${transactions[i].value.toFixed(2)}] | <t:${transactions[i].created
+          }:d>\n`;
       } else if (transactions[i].value < 0) {
         // owe
-        retStr += `${i + 1}) <@!${transactions[i].owner}> owes ${
-          transactions[i].emojis[0]
-        } `;
+        retStr += `${i + 1}) <@!${transactions[i].owner}> owes ${transactions[i].emojis[0]
+          } `;
         retStr += `[$${(-transactions[i].value).toFixed(2)}] `;
         if (transactions[i].description) {
           retStr += `"${transactions[i].description}" `;

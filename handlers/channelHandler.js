@@ -11,9 +11,9 @@ module.exports = {
 
 async function listChannel(interaction) {
   let db = await openDb();
-  sql = `SELECT transactionsid, logid, alertsid FROM servers WHERE serverid = ?`;
-  val = await db.get(sql, [interaction.guildId]);
-  channels = `Transactions channel: `;
+  let sql = `SELECT transactionsid, logid, alertsid FROM servers WHERE serverid = ?`;
+  const val = await db.get(sql, [interaction.guildId]);
+  let channels = `Transactions channel: `;
   channels += val.transactionsid ? `<#${val.transactionsid}>\n` : `not set\n`;
 
   channels += `Money log channel: `;
@@ -47,6 +47,7 @@ async function setChannel(interaction, type, channel) {
       .has(Permissions.FLAGS.SEND_MESSAGES) &&
     channel.permissionsFor(channel.guild.me).has(Permissions.FLAGS.VIEW_CHANNEL)
   ) {
+    let sql;
     switch (type) {
       case "transactions":
         sql = `UPDATE servers SET transactionsid = ? WHERE serverid = ?;`;
@@ -112,6 +113,7 @@ async function setChannel(interaction, type, channel) {
 
 async function unsetChannel(interaction, type) {
   let db = await openDb();
+  let sql;
 
   switch (type) {
     case "transactions":

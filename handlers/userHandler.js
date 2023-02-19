@@ -21,12 +21,12 @@ module.exports = {
 
 async function listUser(interaction) {
   let db = await openDb();
-  sql = `SELECT userid, emoji FROM users WHERE serverid = ? AND status = 1`;
-  activeUsers = await db.all(sql, [interaction.guildId]);
+  let sql = `SELECT userid, emoji FROM users WHERE serverid = ? AND status = 1`;
+  const activeUsers = await db.all(sql, [interaction.guildId]);
   sql = `SELECT userid, emoji FROM users WHERE serverid = ? AND status = 0`;
-  inactiveUsers = await db.all(sql, [interaction.guildId]);
+  const inactiveUsers = await db.all(sql, [interaction.guildId]);
 
-  activeFormUsers = "";
+  let activeFormUsers = "";
   activeUsers.forEach((row) => {
     if (row.userid !== interaction.client.id) {
       activeFormUsers += `${row.emoji} → `;
@@ -34,7 +34,7 @@ async function listUser(interaction) {
     }
   });
 
-  inactiveFormUsers = "";
+  let inactiveFormUsers = "";
   inactiveUsers.forEach((row) => {
     if (row.userid !== interaction.client.id) {
       inactiveFormUsers += `${row.emoji} → `;
@@ -42,7 +42,7 @@ async function listUser(interaction) {
     }
   });
 
-  fields = [
+  let fields = [
     {
       name: `Active users`,
       value: activeFormUsers.slice(0, -1) || `No users set.`,
@@ -96,8 +96,8 @@ async function setUser(interaction, user, emojiStr) {
         ],
       });
     } else {
-      sql = `SELECT userid FROM users WHERE emoji = ? AND serverid = ? AND status = 1`;
-      result = await db.get(sql, [emojiStr, interaction.guildId]);
+      let sql = `SELECT userid FROM users WHERE emoji = ? AND serverid = ? AND status = 1`;
+      const result = await db.get(sql, [emojiStr, interaction.guildId]);
       if (result) {
         interaction.editReply({
           embeds: [
@@ -111,7 +111,7 @@ async function setUser(interaction, user, emojiStr) {
         if (emojiStr.charAt(0) == "<") {
           // server specific emoji
           // search for emoji within server
-          emoji = interaction.guild.emojis.cache.find(
+          const emoji = interaction.guild.emojis.cache.find(
             (emoji) =>
               emoji.id === emojiStr.slice(emojiStr.indexOf(":", 2) + 1, -1)
           );
@@ -126,7 +126,7 @@ async function setUser(interaction, user, emojiStr) {
               ],
             });
           } else {
-            sql = `INSERT OR REPLACE INTO users (serverid, userid, emoji, status) 
+            let sql = `INSERT OR REPLACE INTO users (serverid, userid, emoji, status)
               VALUES (?, ?, ?, 1);`;
             db.run(sql, [interaction.guildId, user.id, emojiStr]).then(() => {
               updateLog(interaction.guild);
@@ -152,7 +152,7 @@ async function setUser(interaction, user, emojiStr) {
           });
         } else {
           // default emoji
-          sql = `INSERT OR REPLACE INTO users (serverid, userid, emoji, status) 
+          let sql = `INSERT OR REPLACE INTO users (serverid, userid, emoji, status)
               VALUES (?, ?, ?, 1);`;
           db.run(sql, [interaction.guildId, user.id, emojiStr]).then(() => {
             updateLog(interaction.guild);
@@ -174,8 +174,8 @@ async function setUser(interaction, user, emojiStr) {
 async function removeUser(interaction, user) {
   let db = await openDb();
 
-  sql = `SELECT userid FROM users WHERE userid = ? AND serverid = ? AND status = 1`;
-  result = await db.get(sql, [user.id, interaction.guildId]);
+  let sql = `SELECT userid FROM users WHERE userid = ? AND serverid = ? AND status = 1`;
+  const result = await db.get(sql, [user.id, interaction.guildId]);
   if (!result) {
     interaction.editReply({
       embeds: [
@@ -268,8 +268,8 @@ async function removeUser(interaction, user) {
 async function deleteUser(interaction, user) {
   let db = await openDb();
 
-  sql = `SELECT userid FROM users WHERE userid = ? AND serverid = ?`;
-  result = await db.get(sql, [user.id, interaction.guildId]);
+  let sql = `SELECT userid FROM users WHERE userid = ? AND serverid = ?`;
+  const result = await db.get(sql, [user.id, interaction.guildId]);
   if (!result) {
     interaction.editReply({
       embeds: [

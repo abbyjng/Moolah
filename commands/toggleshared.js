@@ -25,8 +25,8 @@ module.exports = {
     } else {
       let validUser = await checkValidUser(interaction);
       if (validUser) {
-        sql = `SELECT shared FROM dms WHERE userid = ?`;
-        dms = await db.get(sql, [userid]);
+        let sql = `SELECT shared FROM dms WHERE userid = ?`;
+        const dms = await db.get(sql, [userid]);
 
         if (dms.shared == 1) {
           db.run(`UPDATE dms SET shared = 0 WHERE userid = ?;`, [userid]);
