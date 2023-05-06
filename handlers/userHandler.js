@@ -9,7 +9,7 @@ const {
 const { openDb } = require("./databaseHandler");
 const { updateLog } = require("./../handlers/logHandler.js");
 
-const emojiRegex = require("emoji-regex/RGI_Emoji.js");
+const emojiRegex = require('emoji-regex');
 const regex = emojiRegex();
 
 module.exports = {
