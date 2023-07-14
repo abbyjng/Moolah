@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require("@discordjs/builders");
-const { MAX_CATEGORY } = require("../constants");
+const { MAX_CATEGORY, ERROR_COLOR } = require("../constants");
 const { checkValidUser } = require("./../handlers/permissionHandler.js");
 const {
   listCategory,

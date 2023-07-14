@@ -4,6 +4,7 @@ const {
   setChannel,
   unsetChannel,
 } = require("../handlers/channelHandler.js");
+const { ERROR_COLOR } = require("../constants.js");
 
 module.exports = {
   data: new SlashCommandBuilder()

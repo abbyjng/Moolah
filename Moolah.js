@@ -10,7 +10,7 @@ const {
   getDMLogEmbed,
 } = require("./handlers/logHandler.js");
 const { startReminders } = require("./handlers/reminderHandler.js");
-const { MOOLAH_COLOR, ERROR_COLOR } = require("./constants.js");
+const { MOOLAH_COLOR, ERROR_COLOR, WARNING_COLOR } = require("./constants.js");
 
 let db;
 

@@ -5,6 +5,7 @@ const {
   removeUser,
   deleteUser,
 } = require("../handlers/userHandler.js");
+const { ERROR_COLOR } = require("../constants.js");
 
 module.exports = {
   data: new SlashCommandBuilder()
