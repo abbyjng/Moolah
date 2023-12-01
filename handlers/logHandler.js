@@ -358,7 +358,7 @@ async function getDMLogButtons(firstMonth, prevMonth, nextMonth, latestMonth) {
 
 function monthStartAndEnd(month, year) {
   const start = moment(
-    `${year}-${month.toString().padStart(2, "0")}-01T00:00:00+08:00`
+    `${year}-${month.toString().padStart(2, "0")}-01T00:00:00-08:00`
   )
     .tz("UTC")
     .format();
@@ -369,7 +369,7 @@ function monthStartAndEnd(month, year) {
     month += 1;
   }
   const end = moment(
-    `${year}-${month.toString().padStart(2, "0")}-01T00:00:00+08:00`
+    `${year}-${month.toString().padStart(2, "0")}-01T00:00:00-08:00`
   )
     .tz("UTC")
     .format();
@@ -377,8 +377,8 @@ function monthStartAndEnd(month, year) {
 }
 
 function yearStartAndEnd(year) {
-  const start = moment(`${year}-01-01T00:00:00+08:00`).tz("UTC").format();
-  const end = moment(`${year + 1}-01-01T00:00:00+8:00`)
+  const start = moment(`${year}-01-01T00:00:00-08:00`).tz("UTC").format();
+  const end = moment(`${year + 1}-01-01T00:00:00-8:00`)
     .tz("UTC")
     .format();
   return [start, end];
