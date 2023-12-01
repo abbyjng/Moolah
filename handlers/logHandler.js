@@ -357,7 +357,9 @@ async function getDMLogButtons(firstMonth, prevMonth, nextMonth, latestMonth) {
 }
 
 function monthStartAndEnd(month, year) {
-  const start = moment(`${year}-${month.toString().padStart(2, "0")}-01`)
+  const start = moment(
+    `${year}-${month.toString().padStart(2, "0")}-01T00:00:00Z`
+  )
     .tz("America/Los_Angeles")
     .format();
   if (month === 12) {
@@ -366,15 +368,19 @@ function monthStartAndEnd(month, year) {
   } else {
     month += 1;
   }
-  const end = moment(`${year}-${month.toString().padStart(2, "0")}-01`)
+  const end = moment(
+    `${year}-${month.toString().padStart(2, "0")}-01T00:00:00Z`
+  )
     .tz("America/Los_Angeles")
     .format();
   return [start, end];
 }
 
 function yearStartAndEnd(year) {
-  const start = moment(`${year}-01-01`).tz("America/Los_Angeles").format();
-  const end = moment(`${year + 1}-01-01`)
+  const start = moment(`${year}-01-01T00:00:00Z`)
+    .tz("America/Los_Angeles")
+    .format();
+  const end = moment(`${year + 1}-01-01T00:00:00Z`)
     .tz("America/Los_Angeles")
     .format();
   return [start, end];
