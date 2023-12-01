@@ -1,6 +1,7 @@
 const { MOOLAH_COLOR } = require("../constants.js");
 const { openDb } = require("./databaseHandler.js");
 const { MessageActionRow, MessageButton } = require("discord.js");
+const moment = require("moment-timezone");
 
 let db;
 
@@ -83,8 +84,9 @@ async function getLogEmbeds(server) {
           value += `<@!${user}> owes:\n`;
 
           for (key in log[user]) {
-            value += `$${log[user][key].value.toFixed(2)} to ${log[user][key].emoji
-              } | `;
+            value += `$${log[user][key].value.toFixed(2)} to ${
+              log[user][key].emoji
+            } | `;
           }
           value = value.slice(0, -2) + `\n\n`;
 
@@ -355,20 +357,26 @@ async function getDMLogButtons(firstMonth, prevMonth, nextMonth, latestMonth) {
 }
 
 function monthStartAndEnd(month, year) {
-  const start = `${year}-${month.toString().padStart(2, "0")}-01`;
+  const start = moment(`${year}-${month.toString().padStart(2, "0")}-01`)
+    .tz("America/Los_Angeles")
+    .format();
   if (month === 12) {
     month = 1;
     year += 1;
   } else {
     month += 1;
   }
-  const end = `${year}-${month.toString().padStart(2, "0")}-01`;
+  const end = moment(`${year}-${month.toString().padStart(2, "0")}-01`)
+    .tz("America/Los_Angeles")
+    .format();
   return [start, end];
 }
 
 function yearStartAndEnd(year) {
-  const start = `${year}-01-01`;
-  const end = `${year + 1}-01-01`;
+  const start = moment(`${year}-01-01`).tz("America/Los_Angeles").format();
+  const end = moment(`${year + 1}-01-01`)
+    .tz("America/Los_Angeles")
+    .format();
   return [start, end];
 }
 
